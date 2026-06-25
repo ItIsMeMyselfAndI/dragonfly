@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeftRight, Check, X } from "lucide-react";
 import { substitutesFor, type Component } from "./data";
 import { useBom } from "./store";
+import { useSheet } from "@/lib/sheet-context";
+import { useEffect } from "react";
 
 export function SubstituteSheet({
   component,
@@ -12,6 +14,11 @@ export function SubstituteSheet({
 }) {
   const { swap } = useBom();
   const subs = component ? substitutesFor[component.id] ?? [] : [];
+  const { setIsSheetOpen } = useSheet();
+
+  useEffect(() => {
+    setIsSheetOpen(!!component);
+  }, [component, setIsSheetOpen]);
 
   return (
     <AnimatePresence>
@@ -22,7 +29,7 @@ export function SubstituteSheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-40 mx-auto max-w-[440px] bg-black/50 backdrop-blur-md"
+            className="fixed inset-0 z-999 mx-auto max-w-[440px] bg-black/50 backdrop-blur-md"
           />
           <motion.div
             initial={{ y: "100%" }}
@@ -33,7 +40,7 @@ export function SubstituteSheet({
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.4 }}
             onDragEnd={(_, info) => info.offset.y > 100 && onClose()}
-            className="glass-strong fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[440px] rounded-t-3xl border-t border-white/10 px-5 pb-8 pt-3"
+            className="glass-strong fixed inset-x-0 bottom-0 z-[1000] mx-auto max-w-[440px] rounded-t-3xl border-t border-white/10 px-5 pb-8 pt-3"
           >
             <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-white/15" />
             <div className="mb-5 flex items-start justify-between gap-3">
@@ -73,7 +80,7 @@ export function SubstituteSheet({
                       <p className="mt-2 text-[11px] text-muted-foreground">{s.note}</p>
                     </div>
                     <p className="shrink-0 font-mono text-sm text-foreground">
-                      ${s.unitPrice.toFixed(2)}
+                      ₱{s.unitPrice.toFixed(2)}
                     </p>
                   </div>
                   <motion.button

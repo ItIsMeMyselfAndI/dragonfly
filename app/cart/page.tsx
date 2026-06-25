@@ -1,14 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, ExternalLink, Link, Package } from "lucide-react";
+import { Check, ExternalLink, Package } from "lucide-react";
 import { useBom } from "../../features/bom/store";
+import Link from "next/link";
 
 export default function CartScreen() {
   const { items, total, itemCount } = useBom();
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-14">
+    <div className="flex flex-col gap-5 px-5 pt-14 pb-48">
       <header>
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
           Distributor
@@ -53,7 +54,7 @@ export default function CartScreen() {
                 {c.qty} × {c.name}
               </span>
               <span className="ml-3 shrink-0 font-mono tabular-nums text-muted-foreground">
-                ${(c.qty * c.unitPrice).toFixed(2)}
+                ₱{(c.qty * c.unitPrice).toFixed(2)}
               </span>
             </div>
           ))}
@@ -62,7 +63,7 @@ export default function CartScreen() {
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Total</span>
           <span className="font-mono text-lg font-semibold tabular-nums">
-            ${total.toFixed(2)}
+            ₱{total.toFixed(2)}
           </span>
         </div>
       </div>
@@ -75,7 +76,7 @@ export default function CartScreen() {
         Open distributor cart <ExternalLink size={16} />
       </motion.a>
       <Link
-        to="/"
+        href="/"
         className="text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
       >
         Start a new project
@@ -83,4 +84,3 @@ export default function CartScreen() {
     </div>
   );
 }
-

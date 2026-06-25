@@ -1,6 +1,16 @@
 "use client";
+import { useState } from "react";
 import { motion } from "framer-motion";
+import { Image } from "lucide-react";
 import { useBom } from "../../features/bom/store";
+import { type Component } from "../../features/bom/data";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const categoryColor: Record<string, string> = {
   MCU: "bg-primary/20 text-primary ring-primary/40",
@@ -13,6 +23,7 @@ const categoryColor: Record<string, string> = {
 
 export default function FlowScreen() {
   const { items } = useBom();
+  const [selected, setSelected] = useState<Component | null>(null);
   const mcu = items.find((i) => i.category === "MCU");
   const power = items.find((i) => i.category === "Power");
   const peripherals = items.filter(
@@ -20,7 +31,7 @@ export default function FlowScreen() {
   );
 
   return (
-    <div className="flex flex-col gap-6 px-5 pt-14">
+    <div className="flex flex-col gap-6 px-5 pt-14 pb-48">
       <header>
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
           Visual flow
@@ -34,27 +45,16 @@ export default function FlowScreen() {
       </header>
 
       <div className="relative flex flex-col items-center gap-8 rounded-3xl border border-white/5 bg-surface/40 p-6">
-        {power && (
-          <Node
-            label={power.name}
-            sub={power.specs}
-            category={power.category}
-          />
-        )}
+        {power && <Node component={power} onClick={setSelected} />}
         <Trace />
-        {mcu && (
-          <Node
-            label={mcu.name}
-            sub={mcu.specs}
-            category={mcu.category}
-            accent
-          />
-        )}
+        {mcu && <Node component={mcu} onClick={setSelected} accent />}
         <Trace branches />
         <div className="grid w-full grid-cols-2 gap-3">
           {peripherals.map((p, i) => (
-            <motion.div
+            <motion.button
               key={p.id}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setSelected(p)}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 * i }}
@@ -71,27 +71,44 @@ export default function FlowScreen() {
                   → {p.pins.join(", ")}
                 </p>
               )}
-            </motion.div>
+            </motion.button>
           ))}
         </div>
       </div>
+
+      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+        <DialogContent className="bg-surface border-white/10">
+          <DialogHeader>
+            <DialogTitle>{selected?.name}</DialogTitle>
+            <DialogDescription>{selected?.partNumber}</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="h-40 w-full rounded-xl bg-white/5 flex items-center justify-center text-muted-foreground">
+              <Image size={48} opacity={0.4} />
+            </div>
+            <div className="text-xs text-foreground/80 leading-relaxed">
+              {selected?.specs}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 function Node({
-  label,
-  sub,
-  category,
+  component,
   accent,
+  onClick,
 }: {
-  label: string;
-  sub: string;
-  category: string;
+  component: Component;
   accent?: boolean;
+  onClick: (c: Component) => void;
 }) {
   return (
-    <motion.div
+    <motion.button
+      whileTap={{ scale: 0.98 }}
+      onClick={() => onClick(component)}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className={`relative flex w-full max-w-xs flex-col items-center gap-1 rounded-2xl border bg-surface-elevated px-4 py-3 text-center ${
@@ -99,13 +116,13 @@ function Node({
       }`}
     >
       <span
-        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ${categoryColor[category]}`}
+        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ${categoryColor[component.category]}`}
       >
-        {category}
+        {component.category}
       </span>
-      <p className="text-sm font-medium">{label}</p>
-      <p className="text-[10px] text-muted-foreground">{sub}</p>
-    </motion.div>
+      <p className="text-sm font-medium">{component.name}</p>
+      <p className="text-[10px] text-muted-foreground">{component.specs}</p>
+    </motion.button>
   );
 }
 
@@ -119,4 +136,3 @@ function Trace({ branches }: { branches?: boolean }) {
     </div>
   );
 }
-

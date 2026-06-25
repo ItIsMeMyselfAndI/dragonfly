@@ -15,7 +15,7 @@ export default function Home() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-col gap-6 px-5 pt-14">
+    <div className="flex flex-col gap-6 px-5 pt-14 pb-48">
       {/* Header */}
       <header className="flex items-center justify-between">
         <div>
@@ -100,8 +100,8 @@ export default function Home() {
         </div>
         <div className="flex flex-col gap-2">
           {[
-            { name: "Line-Follower Bot", parts: 7, cost: 58.4 },
-            { name: "ESP32 Weather Node", parts: 5, cost: 34.2 },
+            { name: "Line-Follower Bot", parts: 7, cost: 3387.2 },
+            { name: "ESP32 Weather Node", parts: 5, cost: 1983.6 },
           ].map((p) => (
             <div
               key={p.name}
@@ -114,7 +114,7 @@ export default function Home() {
                 <div>
                   <p className="text-sm font-medium">{p.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {p.parts} parts · ${p.cost.toFixed(2)}
+                    {p.parts} parts · ₱{p.cost.toFixed(2)}
                   </p>
                 </div>
               </div>

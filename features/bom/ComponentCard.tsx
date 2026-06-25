@@ -1,8 +1,15 @@
-import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ChevronDown, Minus, Plus, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import { Info, Minus, Plus, Sparkles, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import type { Component, ComponentDetails } from "./data";
 import { useBom } from "./store";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const stockMeta = {
   "in-stock": { label: "In stock", className: "bg-success/15 text-success ring-success/30" },
@@ -45,36 +52,44 @@ export function ComponentCard({
           </p>
           <p className="mt-2 text-xs text-foreground/80">{c.specs}</p>
         </div>
-        <p className="shrink-0 font-mono text-sm">${c.unitPrice.toFixed(2)}</p>
-      </header>
 
-      {c.details && (
-        <>
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="mt-3 flex w-full items-center justify-between rounded-xl bg-white/[0.03] px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground"
-          >
-            <span className="uppercase tracking-[0.16em]">Specifications</span>
-            <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
-              <ChevronDown size={13} />
-            </motion.span>
-          </button>
-          <AnimatePresence initial={false}>
-            {open && (
-              <motion.div
-                key="specs"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.22 }}
-                className="overflow-hidden"
+        <div className="flex flex-col items-end gap-2">
+          <p className="shrink-0 font-mono text-sm">₱{c.unitPrice.toFixed(2)}</p>
+
+          {c.details && (
+            <>
+              <button
+                onClick={() => setOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl bg-white/[0.03] px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground"
               >
-                <SpecGrid d={c.details} category={c.category} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </>
-      )}
+                <Info size={12} />
+                <span className="uppercase tracking-[0.16em]">SPECS</span>
+              </button>
+
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogContent className="bg-surface border-white/10">
+                  <DialogHeader>
+                    <div className="flex items-center gap-2">
+                      <DialogTitle className="text-base font-semibold">{c.name}</DialogTitle>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ${stockMeta[c.stock].className}`}
+                      >
+                        {stockMeta[c.stock].label}
+                      </span>
+                    </div>
+                    <DialogDescription className="font-mono text-[11px] text-muted-foreground">
+                      {c.partNumber} · {c.category}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="mt-2">
+                    <SpecGrid d={c.details} category={c.category} />
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
+        </div>
+      </header>
 
       <footer className="mt-4 flex items-center justify-between gap-3">
         {isOut ? (

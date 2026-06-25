@@ -64,6 +64,7 @@ export interface CompatibilityAlert {
   severity: "warning" | "info";
   title: string;
   message: string;
+  componentId?: string;
 }
 
 export const initialBOM: Component[] = [
@@ -72,7 +73,7 @@ export const initialBOM: Component[] = [
     name: "Arduino Nano",
     partNumber: "ATmega328P",
     specs: "5V · 16MHz · 22 GPIO",
-    unitPrice: 8.9,
+    unitPrice: 516.2,
     qty: 1,
     stock: "in-stock",
     stockCount: 412,
@@ -94,7 +95,7 @@ export const initialBOM: Component[] = [
     name: "IR Reflectance Array",
     partNumber: "QTR-8RC",
     specs: "8-ch · digital · 3-5V",
-    unitPrice: 12.5,
+    unitPrice: 725,
     qty: 1,
     stock: "in-stock",
     stockCount: 86,
@@ -115,7 +116,7 @@ export const initialBOM: Component[] = [
     name: "TB6612FNG Motor Driver",
     partNumber: "TB6612FNG",
     specs: "Dual H-bridge · 1.2A · 2.5–13.5V",
-    unitPrice: 4.75,
+    unitPrice: 275.5,
     qty: 1,
     stock: "in-stock",
     stockCount: 240,
@@ -136,7 +137,7 @@ export const initialBOM: Component[] = [
     name: "Micro Gear Motor",
     partNumber: "DG01D-E",
     specs: "6V · 200 RPM · 1:48",
-    unitPrice: 3.2,
+    unitPrice: 185.6,
     qty: 2,
     stock: "in-stock",
     stockCount: 1080,
@@ -155,7 +156,7 @@ export const initialBOM: Component[] = [
     name: "Active Piezo Buzzer",
     partNumber: "HYDZ-12V",
     specs: "12V · 85 dB · 2.3 kHz",
-    unitPrice: 1.4,
+    unitPrice: 81.2,
     qty: 1,
     stock: "low",
     stockCount: 9,
@@ -175,7 +176,7 @@ export const initialBOM: Component[] = [
     name: "Quad NAND Gate",
     partNumber: "SN74HC00N",
     specs: "2-V to 6-V · 14-DIP",
-    unitPrice: 0.55,
+    unitPrice: 31.9,
     qty: 1,
     stock: "out",
     stockCount: 0,
@@ -195,7 +196,7 @@ export const initialBOM: Component[] = [
     name: "Li-ion Battery Pack",
     partNumber: "18650-2S",
     specs: "7.4V · 2600mAh · JST",
-    unitPrice: 14.2,
+    unitPrice: 823.6,
     qty: 1,
     stock: "in-stock",
     stockCount: 58,
@@ -219,7 +220,7 @@ export const substitutesFor: Record<string, Substitute[]> = {
       name: "Quad NAND Gate (SMD)",
       partNumber: "SN74HC00DR",
       specs: "2-V to 6-V · SOIC-14",
-      unitPrice: 0.42,
+      unitPrice: 24.36,
       matchScore: 98,
       note: "Identical electricals, SMD footprint. 8.4k in stock.",
     },
@@ -228,7 +229,7 @@ export const substitutesFor: Record<string, Substitute[]> = {
       name: "Quad NAND Gate (CMOS)",
       partNumber: "CD4011BE",
       specs: "3-V to 18-V · 14-DIP",
-      unitPrice: 0.38,
+      unitPrice: 22.04,
       matchScore: 92,
       note: "Wider Vcc range, slower switching. 1.2k in stock.",
     },
@@ -242,5 +243,6 @@ export const compatibilityAlerts: CompatibilityAlert[] = [
     title: "Voltage mismatch",
     message:
       "MCU outputs 5V logic but buzzer expects 12V drive. A MOSFET low-side switch has been suggested.",
+    componentId: "c5",
   },
 ];
