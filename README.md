@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="https://dragonfly-rose.vercel.app/"><strong>🌐 Live Web App</strong></a> · 
-  <a href="https://youtube.com/shorts/fWHbiZsJTfg?si=6s3VNDjkSPQoyFTz"><strong>🎥 View Demo (Short)</strong></a>
+  <a href="https://youtube.com/shorts/1CY56LGngN8?si=ap-o09T4pmsfN_jm"><strong>🎥 View Demo (Short)</strong></a>
 </p>
 
 ---
