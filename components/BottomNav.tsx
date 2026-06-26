@@ -7,7 +7,7 @@ import { Sparkles, ListChecks, GitBranch, ShoppingBag } from "lucide-react";
 import { useSheet } from "@/lib/sheet-context";
 
 const tabs = [
-  { href: "/", label: "Build", icon: Sparkles },
+  { href: "/", label: "Inspire", icon: Sparkles },
   { href: "/bom", label: "BOM", icon: ListChecks },
   { href: "/flow", label: "Flow", icon: GitBranch },
   { href: "/cart", label: "Cart", icon: ShoppingBag },

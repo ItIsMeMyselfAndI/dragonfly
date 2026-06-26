@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Camera,
@@ -12,9 +12,12 @@ import {
   Wifi,
   Network,
   Cpu,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 const categoryIcons: Record<string, typeof Bot> = {
   Robotics: Bot,
@@ -39,6 +42,47 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const router = useRouter();
 
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<
+    { file: File; preview: string }[]
+  >([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (file: File | null) => {
+    if (!file) return;
+
+    // Create preview URL
+    const preview = URL.createObjectURL(file);
+    setSelectedFiles((prev) => [...prev, { file, preview }]);
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => {
+      const updated = [...prev];
+      URL.revokeObjectURL(updated[index].preview);
+      updated.splice(index, 1);
+      return updated;
+    });
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 px-5 pt-14 pb-48">
       {/* Header */}
@@ -57,10 +101,25 @@ export default function Home() {
       </header>
 
       {/* Upload card */}
-      <motion.button
+      <motion.div
         whileTap={{ scale: 0.985 }}
-        className="group relative flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-white/10 bg-surface/40 px-6 py-10 text-center transition-colors hover:border-primary/40"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`group relative flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed px-6 py-10 text-center transition-colors cursor-pointer ${
+          isDragging
+            ? "border-primary bg-primary/5"
+            : "border-white/10 bg-surface/40 hover:border-primary/40"
+        }`}
       >
+        <input
+          type="file"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={(e) => handleFile(e.target.files?.[0] || null)}
+          accept="image/*,.kicad_pcb"
+        />
         <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/30">
           <Upload className="text-primary" size={24} />
           <div className="absolute inset-0 rounded-2xl bg-primary/20 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
@@ -73,9 +132,46 @@ export default function Home() {
         </div>
         <div className="mt-2 flex items-center gap-1.5 text-xs text-primary">
           <Camera size={14} />
-          <span>or snap a photo</span>
+          <span>or click to browse</span>
         </div>
-      </motion.button>
+      </motion.div>
+
+      {/* Selected Images Preview */}
+      {selectedFiles.length > 0 && (
+        <div
+          className={cn(
+            "flex flex-row flex-nowrap gap-4 justify-start w-full max-w-full",
+            "overflow-x-auto pr-2 scrollbar-thin",
+          )}
+        >
+          {selectedFiles.map((item, index) => (
+            <div key={index} className="relative h-18 w-18 flex-shrink-0 mt-2">
+              <Image
+                width={72}
+                height={72}
+                src={item.preview}
+                alt={`Preview ${index}`}
+                className="rounded-lg object-contain w-full h-full"
+              />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeFile(index);
+                }}
+                className={cn(
+                  "absolute -top-2 -right-2",
+                  "flex h-5 w-5 items-center justify-center",
+                  "rounded-full bg-red-500/60 text-white",
+                  "border border-red-500 shadow-sm",
+                  "hover:cursor-pointer",
+                )}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Prompt */}
       <section className="flex flex-col gap-3">
