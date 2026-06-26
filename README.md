@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<p align="center">
+  <img src="public/logo.jpg" alt="Dragonfly Logo" width="250" height="250" />
+</p>
 
-## Getting Started
+<h1 align="center">Dragonfly</h1>
+<p align="center">
+  <em>An AI-powered, mobile-first sourcing assistant designed to turn messy hardware ideas into ready-to-buy reality.</em>
+</p>
 
-First, run the development server:
+<p align="center">
+  <a href="https://dragonfly-rose.vercel.app/"><strong>🌐 Live Web App</strong></a> · 
+  <a href="https://youtube.com/shorts/fWHbiZsJTfg?si=6s3VNDjkSPQoyFTz"><strong>🎥 View Demo (Short)</strong></a>
+</p>
 
+---
+
+## 🛑 The Problem
+The hardware maker's journey frequently breaks down at the sourcing stage. Builders attempting to translate a discovered project or raw idea into a purchasable Bill of Materials (BOM) face a manual, error-prone task. They must identify components, verify stock, ensure correct packaging (e.g., through-hole vs. SMD), cross-reference datasheets for electrical compatibility, and source alternatives for out-of-stock items. This tedious canvassing leads directly to demoralization and abandoned projects.
+
+## 💡 The Solution
+Dragonfly eliminates manual canvassing by automating component extraction, intelligent substitution, and design validation. Stop canvassing datasheets and start building.
+
+### ✨ Core Features
+* **Multimodal "Inspire" Dashboard:** Upload a schematic or type a natural language prompt (e.g., *"5V line-following robot"*) to instantly generate a parts list.
+* **Interactive Smart BOM:** A mobile-optimized feed displaying critical "dealbreaker" specs (operating voltage, package type), live pricing, and stock status.
+* **Intelligent Substitution Engine:** Automatically flags out-of-stock items and provides a one-tap modal suggesting drop-in replacements with matching electrical specifications and footprints.
+* **"Gotcha" Compatibility Guard:** Proactively evaluates the circuit and displays warnings for common oversights (e.g., voltage logic mismatches or missing flyback diodes).
+* **Visual Dependency Flow:** A minimalist, interactive React Flow node-tree mapping out signal and power paths between components.
+* **Sticky One-Click Checkout:** Integrates directly with distributor APIs to push the validated BOM directly into a merchant cart.
+
+---
+
+## 🛠️ Tech Stack & Architecture
+Although Dragonfly is designed conceptually as a native mobile application, this high-fidelity prototype was built as a **Next.js web application** constrained to a mobile viewport for rapid hackathon iteration. 
+* **Frontend Framework:** Next.js (App Router), React, TypeScript
+* **Styling:** Tailwind CSS
+* **Visual Flow:** React Flow
+* **Architecture:** Strict Feature-First / MVC architecture, cleanly decoupling the UI from underlying mock data state logic.
+
+---
+
+## 🚀 Getting Started (Installation)
+
+To run the Dragonfly Next.js prototype locally on your machine, follow these steps:
+
+### 1. Clone the repository
+```bash
+git clone [https://github.com/your-username/dragonfly.git](https://github.com/your-username/dragonfly.git)
+cd dragonfly
+```
+
+### 2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+### 3. Run the development server
 ```bash
 npm run dev
 # or
 yarn dev
 # or
 pnpm dev
-# or
-bun dev
 ```
+### 4. Open the app
+Open your browser and navigate to http://localhost:3000.
+> [!NOTE]
+> For the best experience, open your browser's Developer Tools and toggle the Device Toolbar to view the app in a mobile viewport like an iPhone 14/15.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 👥 The Team
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Name | Role |
+| :--- | :--- |
+| [**Eger L. Mirasol**](https://github.com/ItIsMeMyselfAndI) | Team Lead & Backend Concepts |
+| [**Marcus Mikel S. Abrio**]() | Product Manager |
+| [**Kyle Luis E. Marcia**]() | Software Architect |
+| [**Jana Erin B. Villafranca**]() | UI/UX Designer |
+| [**Franchesco Angelo Angeles**]() | Frontend Developer |
+| [**Christian Jireh Toreres**]() | AI & Backend Concepts |
