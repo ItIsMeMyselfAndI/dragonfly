@@ -78,7 +78,7 @@ Open your browser and navigate to http://localhost:3000.
 | :--- | :--- |
 | [**Eger L. Mirasol**](https://github.com/ItIsMeMyselfAndI) | Team Lead & Backend Concepts |
 | [**Marcus Mikel S. Abrio**]() | Product Manager |
-| [**Kyle Luis E. Marcial**]() | Software Architect |
+| [**Kyle Luis E. Marcial**](https://github.com/Kyleeeee0) | Software Architect |
 | [**Jana Erin B. Villafranca**]() | UI/UX Designer |
 | [**Franchesco Angelo Angeles**]() | Frontend Developer |
 | [**Christian Jireh Toreres**]() | AI & Backend Concepts |
