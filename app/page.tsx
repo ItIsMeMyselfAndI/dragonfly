@@ -45,7 +45,7 @@ export default function Home() {
       <header className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Good evening
+            Dragonfly
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
             {"Let's build something"}
