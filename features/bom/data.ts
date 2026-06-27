@@ -35,6 +35,16 @@ export interface ComponentDetails {
   contactRating?: string; // relay contacts
 }
 
+export interface StoreOption {
+  id: string;
+  name: string;
+  storeName: string;
+  price: number;
+  link: string;
+  inStock: boolean;
+  isCheapest: boolean;
+}
+
 export interface Component {
   id: string;
   name: string;
@@ -47,6 +57,7 @@ export interface Component {
   category: "MCU" | "Sensor" | "Actuator" | "Logic" | "Power" | "Passive";
   pins?: string[];
   details?: ComponentDetails;
+  storeOptions?: StoreOption[];
 }
 
 export interface Substitute {
