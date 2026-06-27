@@ -111,7 +111,7 @@ export default function BomScreen() {
     setTimeout(() => setCheckout("done"), 1400);
     setTimeout(() => {
       setCheckout("idle");
-      if (selectedProject) pushToCart(selectedProject);
+      if (selectedProject) pushToCart();
       router.push("/cart");
     }, 2400);
   };

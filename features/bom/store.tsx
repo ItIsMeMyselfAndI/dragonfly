@@ -8,21 +8,24 @@ import {
   type ReactNode,
 } from "react";
 import { type Component } from "./data";
-import { ProjectDefinition, recentProjects } from "@/data/mock/projects";
+import { type ProjectTag, recentProjects } from "@/data/mock/projects";
 import { mockInventory } from "@/data/mock/inventory";
+import {
+  type ProjectCartSummary,
+  calculateProjectCartSummary,
+} from "@/lib/project-calculator";
 
-// ...
 interface BomStore {
   items: Component[];
   total: number;
   itemCount: number;
-  projectInfo: { name: string; tag: string } | null;
-  pushedHistory: ProjectDefinition[];
+  projectInfo: { name: string; tag: ProjectTag } | null;
+  pushedHistory: ProjectCartSummary[];
   setQty: (id: string, qty: number) => void;
   remove: (id: string) => void;
   swap: (id: string, next: Omit<Component, "qty">) => void;
   loadProject: (projectName: string) => void;
-  pushToCart: (projectName: string) => void;
+  pushToCart: (projectName?: string, skipHistory?: boolean) => void;
 }
 
 const Ctx = createContext<BomStore | null>(null);
@@ -31,9 +34,9 @@ export function BomProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Component[]>([]);
   const [projectInfo, setProjectInfo] = useState<{
     name: string;
-    tag: string;
+    tag: ProjectTag;
   } | null>(null);
-  const [pushedHistory, setPushedHistory] = useState<ProjectDefinition[]>([]);
+  const [pushedHistory, setPushedHistory] = useState<ProjectCartSummary[]>([]);
 
   const loadProject = (projectName: string) => {
     const project = recentProjects.find((p) => p.name === projectName);
@@ -50,18 +53,39 @@ export function BomProvider({ children }: { children: ReactNode }) {
   };
 
   const pushToCart = useCallback(
-    (projectName: string) => {
-      const project = recentProjects.find((p) => p.name === projectName);
-      if (!project) return;
+    (projectName?: string, skipHistory = false) => {
+      let info = projectInfo;
+      let itemsToUse = items;
 
-      // Add to history if not already present
-      if (!pushedHistory.find((p) => p.name === projectName)) {
-        setPushedHistory((prev) => [...prev, project]);
+      if (projectName) {
+        const project = recentProjects.find((p) => p.name === projectName);
+        if (!project) return;
+
+        info = { name: project.name, tag: project.tag };
+
+        itemsToUse = project.nodes
+          .map((node) => node.id)
+          .map((id) => mockInventory.find((item) => item.id === id))
+          .filter((item): item is Component => !!item);
       }
 
-      loadProject(projectName);
+      if (!info) return;
+
+      const summary = calculateProjectCartSummary(
+        info.name,
+        info.tag,
+        itemsToUse,
+      );
+
+      if (!skipHistory) {
+        setPushedHistory((prev) => [...prev, summary]);
+      }
+
+      // Update active state to reflect the pushed/loaded project
+      setProjectInfo(info);
+      setItems(itemsToUse);
     },
-    [pushedHistory],
+    [items, projectInfo],
   );
 
   const value = useMemo<BomStore>(() => {
@@ -89,7 +113,6 @@ export function BomProvider({ children }: { children: ReactNode }) {
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
-// ...
 
 export function useBom() {
   const v = useContext(Ctx);

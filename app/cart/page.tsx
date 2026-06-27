@@ -14,7 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { categoryIcons } from "@/data/mock/projects";
-import { calculateTotalProjectPrice } from "@/lib/project-calculator";
 
 export default function CartScreen() {
   const { items, total, itemCount, projectInfo, pushedHistory, pushToCart } =
@@ -22,9 +21,29 @@ export default function CartScreen() {
   const [isListModalOpen, setIsListModalOpen] = useState(false);
 
   const handlePushToCart = (projectName: string) => {
-    pushToCart(projectName);
+    pushToCart(projectName, true);
     setIsListModalOpen(false);
   };
+
+  if (pushedHistory.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 px-5 pt-14 pb-48 text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-surface/60 text-muted-foreground">
+          <ShoppingCart size={40} />
+        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">Cart empty</h1>
+        <p className="text-sm text-muted-foreground">
+          Push a project from the BOM manager to get started.
+        </p>
+        <Link
+          href="/bom"
+          className="mt-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
+        >
+          Go to BOM Manager
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5 px-5 pt-14 pb-48">
@@ -142,15 +161,14 @@ export default function CartScreen() {
           </DialogHeader>
           <div className="flex flex-col gap-2 mt-4">
             {pushedHistory.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No history yet.
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-4">No history yet.</p>
             ) : (
               pushedHistory.map((p) => (
                 <div
-                  key={p.name}
+                  key={p.id}
                   className="flex items-center justify-between rounded-2xl bg-surface-elevated py-2 px-4 ring-1 ring-white/5"
                 >
+
                   <div className="flex flex-1 items-center justify-between transition-colors p-2 rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -162,7 +180,7 @@ export default function CartScreen() {
                       <div>
                         <p className="text-sm font-medium">{p.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          ₱{calculateTotalProjectPrice(p).toFixed(2)}
+                          ₱{p.totalPrice.toFixed(2)}
                         </p>
                       </div>
                     </div>
