@@ -1,6 +1,7 @@
 import { getAllComponents } from "./inventory/client";
 import { Component } from "./inventory/types";
-import { ProjectDefinition, ProjectTag } from "./project/types";
+import { ProjectDefinition, ProjectModel, ProjectTag } from "./project/types";
+import { getProjectNodes } from "./project/client";
 
 export interface ProjectCartSummary {
   id: string;
@@ -15,11 +16,19 @@ export interface ProjectCartSummary {
  * Calculates the summary data from current BOM items.
  */
 export const calculateProjectCost = async (
-  project: ProjectDefinition,
+  project: ProjectDefinition | ProjectModel,
 ): Promise<number> => {
-  const itemIds = project.nodes.map((node) => node.id);
+  let nodes: any[] = [];
+
+  if ("nodes" in project) {
+    nodes = project.nodes;
+  } else {
+    nodes = await getProjectNodes(project.id);
+  }
+
+  const componentIds = nodes.map((node) => node.componentId || node.id);
   const components = await getAllComponents();
-  const items = itemIds
+  const items = componentIds
     .map((id) => components.find((item) => item.id === id))
     .filter((item) => item !== undefined);
 

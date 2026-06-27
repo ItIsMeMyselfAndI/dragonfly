@@ -5,7 +5,7 @@ import { useBom } from "./store";
 import { useSheet } from "@/lib/sheet-context";
 import { useEffect, useMemo, useState } from "react";
 import { getAllComponents } from "@/lib/inventory/client";
-import { recentProjects } from "@/data/mock/projects";
+import { getAllProjects, getProjectSubstitutes } from "@/lib/project/client";
 import { Component, StockStatus } from "@/lib/inventory/types";
 
 export function SubstituteSheet({
@@ -19,6 +19,7 @@ export function SubstituteSheet({
 }) {
   const { swap } = useBom();
   const [inventory, setInventory] = useState<Component[]>([]);
+  const [projectSubsData, setProjectSubsData] = useState<any[]>([]);
 
   useEffect(() => {
     const loadInventory = async () => {
@@ -32,17 +33,32 @@ export function SubstituteSheet({
     loadInventory();
   }, []);
 
-  const project = useMemo(() => {
-    return recentProjects.find((p) => p.name === projectName);
-  }, [projectName]);
+  useEffect(() => {
+    const loadProjectSubstitutes = async () => {
+      if (!projectName || !component) return;
+      
+      try {
+        const projects = await getAllProjects();
+        const project = projects.find(p => p.name === projectName);
+        
+        if (project) {
+          const subs = await getProjectSubstitutes(project.id);
+          const componentSubs = subs.filter(s => s.originalComponentId === component.id);
+          setProjectSubsData(componentSubs);
+        }
+      } catch (err) {
+        console.error("Failed to load project substitutes:", err);
+      }
+    };
+    loadProjectSubstitutes();
+  }, [projectName, component]);
 
-  // Find project-specific substitutes, explicit substitutes, or find compatible components in inventory
   const projectSubs = useMemo(() => {
-    if (!component || !project?.substitutes || inventory.length === 0)
+    if (!component || projectSubsData.length === 0 || inventory.length === 0)
       return [];
-    const substituteIds = project.substitutes[component.id] || [];
-    return substituteIds
-      .map((id) => inventory.find((item) => item.id === id))
+    
+    return projectSubsData
+      .map((sub) => inventory.find((item) => item.id === sub.substituteComponentId))
       .filter((item): item is Component => !!item)
       .map((c: Component) => ({
         id: c.id,
@@ -53,7 +69,7 @@ export function SubstituteSheet({
         matchScore: 100, // Project-approved
         note: "Project-approved substitute.",
       }));
-  }, [component, project, inventory]);
+  }, [component, projectSubsData, inventory]);
 
   const explicitSubs = component ? (substitutesFor[component.id] ?? []) : [];
 

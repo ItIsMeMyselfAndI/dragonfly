@@ -11,7 +11,7 @@ export function ProjectCost({
   project,
   className = "",
 }: {
-  project: ProjectDefinition | ProjectCartSummary;
+  project: ProjectDefinition | ProjectModel | ProjectCartSummary;
   className?: string;
 }) {
   const [cost, setCost] = useState<number | null>(null);

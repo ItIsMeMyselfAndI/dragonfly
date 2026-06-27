@@ -20,10 +20,11 @@ import { ComponentCard } from "@/features/bom/ComponentCard";
 import { SubstituteSheet } from "@/features/bom/SubstituteSheet";
 import { compatibilityAlerts } from "@/features/bom/data";
 import { useRouter, useSearchParams } from "next/navigation";
-import { recentProjects } from "@/data/mock/projects";
+import { getAllProjects } from "@/lib/project/client";
+import { type ProjectModel } from "@/lib/project/types";
 import { type ProjectCartSummary } from "@/lib/project-calculator";
 import { ProjectCost } from "@/components/ProjectCost";
-import { cn } from "@/lib/utils";
+import { cn, formatRelativeTime } from "@/lib/utils";
 import { Component, StockStatus } from "@/lib/inventory/types";
 
 const categoryIcons: Record<string, typeof Bot> = {
@@ -38,7 +39,7 @@ function ProjectItem({
   project,
   onSelect,
 }: {
-  project: (typeof recentProjects)[0];
+  project: ProjectModel;
   onSelect: (name: string) => void;
 }) {
   return (
@@ -66,7 +67,7 @@ function ProjectItem({
             {project.tag}
           </span>
           <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Clock size={12} /> {project.time}
+            <Clock size={12} /> {formatRelativeTime(project.time)}
           </span>
         </div>
         <ArrowRight
@@ -81,6 +82,7 @@ function ProjectItem({
 export default function BomScreen() {
   const { items, alerts, total, itemCount, loadProject, pushToCart } = useBom();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [projects, setProjects] = useState<ProjectModel[]>([]);
   const [sub, setSub] = useState<Component | null>(null);
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [checkout, setCheckout] = useState<"idle" | "loading" | "done">("idle");
@@ -89,6 +91,18 @@ export default function BomScreen() {
 
   const generate = searchParams?.get("generate");
   const prompt = searchParams?.get("prompt");
+
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const data = await getAllProjects();
+        setProjects(data);
+      } catch (e) {
+        console.error("Failed to fetch projects", e);
+      }
+    }
+    fetchProjects();
+  }, []);
 
   useEffect(() => {
     if ((generate === "true" || generate === "dynamic") && prompt) {
@@ -113,9 +127,9 @@ export default function BomScreen() {
           </h1>
         </header>
         <div className="flex flex-col gap-3">
-          {recentProjects.map((p) => (
+          {projects.map((p) => (
             <ProjectItem
-              key={p.name}
+              key={p.id}
               project={p}
               onSelect={handleSelectProject}
             />
@@ -131,7 +145,7 @@ export default function BomScreen() {
     setTimeout(() => {
       setCheckout("idle");
       if (selectedProject) {
-        const project = recentProjects.find((p) => p.name === selectedProject);
+        const project = projects.find((p) => p.name === selectedProject);
         if (project) {
           const summary: Omit<ProjectCartSummary, "totalPrice"> = {
             id: `${project.name}-${Date.now()}`,
