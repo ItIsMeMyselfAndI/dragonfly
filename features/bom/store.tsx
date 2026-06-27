@@ -82,10 +82,11 @@ export function BomProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<BomStore>(() => {
-    const total = items.reduce((s, i) => s + i.unitPrice * i.qty, 0);
-    const itemCount = items.reduce((s, i) => s + i.qty, 0);
+    const total = (items || []).reduce((s, i) => s + (i.unitPrice || 0) * (i.qty || 1), 0);
+    const itemCount = (items || []).reduce((s, i) => s + (i.qty || 1), 0);
     return {
-      items,
+      items: items || [],
+      alerts: alerts || [],
       total,
       itemCount,
       projectInfo,
