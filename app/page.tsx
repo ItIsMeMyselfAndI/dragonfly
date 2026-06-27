@@ -19,8 +19,8 @@ import { useRouter } from "next/navigation";
 import { useBom } from "@/features/bom/store";
 import Link from "next/link";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
-import { recentProjects } from "@/data/mock/projects";
+import { cn, formatRelativeTime } from "@/lib/utils";
+import { getAllProjects } from "@/lib/project/client";
 import { ProjectCost } from "@/components/ProjectCost";
 
 const categoryIcons: Record<string, typeof Bot> = {
@@ -32,23 +32,34 @@ const categoryIcons: Record<string, typeof Bot> = {
 };
 
 const suggestions = [
-
   "5V line-following robot with a higher voltage buzzer",
   "ESP32 weather station, OLED + BME280",
   "Bluetooth audio amp, 2x3W class-D",
 ];
 
-const projects = recentProjects.slice(0, 2);
-
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showTip, setShowTip] = useState(false);
+  const [projects, setProjects] = useState<any[]>([]);
   const router = useRouter();
 
   const { loadDynamicProject } = useBom();
 
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const data = await getAllProjects();
+        setProjects(data.slice(0, 2));
+      } catch (e) {
+        console.error("Failed to fetch projects", e);
+      }
+    }
+    fetchProjects();
+  }, []);
+
   const handleGenerate = async () => {
+// ...
     if (prompt.trim() === "" && selectedFiles.length === 0) {
       setShowTip(true);
       setTimeout(() => setShowTip(false), 3000);
@@ -288,7 +299,7 @@ export default function Home() {
         <div className="flex flex-col gap-2">
           {projects.map((p) => (
             <div
-              key={p.name}
+              key={p.id}
               className="flex items-center justify-between rounded-2xl bg-surface/60 p-4 ring-1 ring-white/5"
             >
               <div className="flex items-center gap-3">
@@ -310,7 +321,7 @@ export default function Home() {
                   {p.tag}
                 </span>
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock size={12} /> {p.time}
+                  <Clock size={12} /> {formatRelativeTime(p.time)}
                 </span>
               </div>
             </div>

@@ -10,13 +10,14 @@ export type ProjectTag =
 
 export interface ProjectNode {
   id: string;
-  position: { x: number; y: number };
+  positionX: number;
+  positionY: number;
 }
 
 export interface ProjectEdge {
   id: string;
-  source: string;
-  target: string;
+  sourceId: string;
+  targetId: string;
   sourceHandle?: "top" | "bottom" | "left" | "right";
   targetHandle?: "top" | "bottom" | "left" | "right";
   label?: string;
@@ -42,6 +43,7 @@ export interface ProjectModel {
 
 export interface ProjectNodeModel extends ProjectNode {
   projectId: string;
+  componentId: string;
 }
 export interface ProjectEdgeModel extends ProjectEdge {
   projectId: string;
