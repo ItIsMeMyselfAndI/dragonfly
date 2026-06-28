@@ -93,22 +93,23 @@ export default function BomScreen() {
   const prompt = searchParams?.get("prompt");
 
   useEffect(() => {
-    async function fetchProjects() {
+    async function init() {
       try {
         const data = await getAllProjects();
         setProjects(data);
+
+        if ((generate === "true" || generate === "dynamic") && prompt) {
+          const decodedPrompt = decodeURIComponent(prompt);
+          setSelectedProject(decodedPrompt);
+          // We should probably also load the project data here if it's a dynamic one,
+          // but for now, we'll just set the active project name.
+        }
       } catch (e) {
-        console.error("Failed to fetch projects", e);
+        console.error("Failed to initialize BOM screen", e);
       }
     }
-    fetchProjects();
-  }, []);
-
-  useEffect(() => {
-    if ((generate === "true" || generate === "dynamic") && prompt) {
-      setSelectedProject(decodeURIComponent(prompt));
-    }
-  }, [generate, prompt, setSelectedProject]);
+    init();
+  }, [generate, prompt]);
 
   const handleSelectProject = (projectName: string) => {
     setSelectedProject(projectName);

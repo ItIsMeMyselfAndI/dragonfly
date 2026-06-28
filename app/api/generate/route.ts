@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { BomExtractionSchema } from "@/lib/schemas/bomSchema";
 import { resolveComponentPricing } from "@/lib/pricing";
-import { StockStatus } from "@/lib/inventory/types";
+import { Component, StockStatus } from "@/lib/inventory/types";
+import { type BomAlert } from "@/features/bom/data";
 
 // Initialize Gen AI SDK
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -53,12 +54,15 @@ CRITICAL INSTRUCTIONS:
     });
 
     // Parse the structured JSON response
-    const extraction = JSON.parse(response.text || "{}");
+    const extraction = JSON.parse(response.text || "{}") as {
+      items: Component[];
+      alerts: BomAlert[];
+    };
     const extractedItems = extraction.items || [];
 
     // 3. Pricing Engine Logic
     const itemsWithPricing = await Promise.all(
-      extractedItems.map(async (item: any, index: number) => {
+      extractedItems.map(async (item: Component, index: number) => {
         // Run real web search / scraping
         const storeOptions = await resolveComponentPricing(
           item.name,
@@ -70,8 +74,8 @@ CRITICAL INSTRUCTIONS:
           storeOptions.find((s) => s.isCheapest) || storeOptions[0];
 
         return {
-          id: `c-gen-${Date.now()}-${index}`,
           ...item,
+          id: `c-gen-${Date.now()}-${index}`,
           storeOptions,
           // Hydrate the default frontend expectations based on cheapest option
           unitPrice: cheapestOption ? cheapestOption.price : 0,

@@ -18,12 +18,17 @@ export interface Substitute {
   note: string;
 }
 
-export interface CompatibilityAlert {
-  id: string;
+export interface BomAlert {
+  id?: string;
   severity: "warning" | "info";
   title: string;
   message: string;
   componentId?: string;
+  partReference?: string;
+}
+
+export interface CompatibilityAlert extends BomAlert {
+  id: string;
 }
 
 export const substitutesFor: Record<string, Substitute[]> = {
