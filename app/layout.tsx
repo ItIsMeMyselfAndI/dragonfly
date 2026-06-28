@@ -5,6 +5,7 @@ import "./globals.css";
 import "reactflow/dist/style.css";
 import { MobileShell } from "@/components/MobileShell";
 import { SheetProvider } from "@/lib/sheet-context";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,7 @@ export default function RootLayout({
         <BomProvider>
           <SheetProvider>
             <MobileShell>{children}</MobileShell>
+            <Toaster position="top-center" theme="dark" />
           </SheetProvider>
         </BomProvider>
       </body>
