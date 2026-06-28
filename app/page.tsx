@@ -14,6 +14,7 @@ import {
   Cpu,
   X,
   Loader2,
+  HelpCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useBom } from "@/features/bom/store";
@@ -22,6 +23,7 @@ import Image from "next/image";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { getAllProjects } from "@/lib/project/client";
 import { ProjectCost } from "@/components/ProjectCost";
+import { ProjectModel } from "@/lib/project/types";
 
 const categoryIcons: Record<string, typeof Bot> = {
   Robotics: Bot,
@@ -29,6 +31,7 @@ const categoryIcons: Record<string, typeof Bot> = {
   Networking: Network,
   Mechatronics: Cpu,
   Power: Zap,
+  "N/A": HelpCircle,
 };
 
 const suggestions = [
@@ -41,7 +44,7 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showTip, setShowTip] = useState(false);
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<ProjectModel[]>([]);
   const router = useRouter();
 
   const { loadDynamicProject } = useBom();
@@ -59,7 +62,7 @@ export default function Home() {
   }, []);
 
   const handleGenerate = async () => {
-// ...
+    // ...
     if (prompt.trim() === "" && selectedFiles.length === 0) {
       setShowTip(true);
       setTimeout(() => setShowTip(false), 3000);
@@ -84,7 +87,12 @@ export default function Home() {
       const data = await res.json();
 
       const projectName = prompt ? prompt : "Extracted Schematic";
-      loadDynamicProject(projectName, data.items, data.alerts);
+      loadDynamicProject(
+        projectName,
+        data.tag || "N/A",
+        data.items,
+        data.alerts,
+      );
 
       router.push(
         `/bom?generate=dynamic&prompt=${encodeURIComponent(projectName)}`,

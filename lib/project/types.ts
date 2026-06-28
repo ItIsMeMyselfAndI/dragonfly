@@ -1,12 +1,25 @@
-export type ConnectionType = "power" | "signal" | "logic" | "i2c";
+import { Component } from "../inventory/types";
 
-export type ProjectTag =
-  | "Robotics"
-  | "IoT"
-  | "Power"
-  | "Networking"
-  | "Mechatronics"
-  | "AI Generated";
+export const ConnectionEnum = {
+  POWER: "power",
+  SIGNAL: "signal",
+  LOGIC: "logic",
+  I2C: "i2c",
+} as const;
+
+export type ConnectionType =
+  (typeof ConnectionEnum)[keyof typeof ConnectionEnum];
+
+export const ProjectTag = {
+  ROBOTICS: "Robotics",
+  IOT: "IoT",
+  POWER: "Power",
+  NETWORKING: "Networking",
+  MECHATRONICS: "Mechatronics",
+  NA: "N/A",
+} as const;
+
+export type ProjectTagType = (typeof ProjectTag)[keyof typeof ProjectTag];
 
 export interface ProjectNode {
   id: string;
@@ -28,17 +41,26 @@ export interface ProjectDefinition {
   id: string;
   name: string;
   time: string;
-  tag: ProjectTag;
+  tag: ProjectTagType;
   nodes: ProjectNode[];
   edges: ProjectEdge[];
   substitutes?: Record<string, string[]>;
+}
+
+export interface ProjectCartSummary {
+  id: string;
+  name: string;
+  tag: ProjectTagType;
+  timestamp: string;
+  totalPrice: number;
+  items: (Component & { qtyPrice: number })[];
 }
 
 export interface ProjectModel {
   id: string;
   name: string;
   time: string;
-  tag: ProjectTag;
+  tag: ProjectTagType;
 }
 
 export interface ProjectNodeModel extends ProjectNode {

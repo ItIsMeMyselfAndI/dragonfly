@@ -9,18 +9,16 @@ import {
 } from "react";
 import { getAllProjects, getProjectNodes } from "@/lib/project/client";
 import { getAllComponents } from "@/lib/inventory/client";
-import { type ProjectCartSummary } from "@/lib/project-calculator";
 import { Component } from "@/lib/inventory/types";
-import { ProjectTag } from "@/lib/project/types";
-import { type BomAlert } from "@/features/bom/data";
-
+import { ProjectCartSummary, ProjectTagType } from "@/lib/project/types";
+import { BomAlert } from "./data";
 
 interface BomStore {
   items: Component[];
   alerts: BomAlert[];
   total: number;
   itemCount: number;
-  projectInfo: { name: string; tag: ProjectTag } | null;
+  projectInfo: { name: string; tag: ProjectTagType } | null;
   pushedHistory: ProjectCartSummary[];
   setQty: (id: string, qty: number) => void;
   remove: (id: string) => void;
@@ -28,6 +26,7 @@ interface BomStore {
   loadProject: (projectName: string) => Promise<void>;
   loadDynamicProject: (
     projectName: string,
+    tag: ProjectTagType,
     newItems: Component[],
     newAlerts?: BomAlert[],
   ) => void;
@@ -42,7 +41,7 @@ export function BomProvider({ children }: { children: ReactNode }) {
   const [alerts, setAlerts] = useState<BomAlert[]>([]);
   const [projectInfo, setProjectInfo] = useState<{
     name: string;
-    tag: ProjectTag;
+    tag: ProjectTagType;
   } | null>(null);
   const [pushedHistory, setPushedHistory] = useState<ProjectCartSummary[]>([]);
 
@@ -66,10 +65,11 @@ export function BomProvider({ children }: { children: ReactNode }) {
 
   const loadDynamicProject = (
     projectName: string,
+    tag: ProjectTagType,
     newItems: Component[],
     newAlerts: BomAlert[] = [],
   ) => {
-    setProjectInfo({ name: projectName, tag: "AI Generated" });
+    setProjectInfo({ name: projectName, tag });
     setItems(newItems);
     setAlerts(newAlerts);
   };

@@ -1,44 +1,27 @@
 import { getAllComponents } from "./inventory/client";
 import { Component } from "./inventory/types";
-import { ProjectDefinition, ProjectModel, ProjectTag } from "./project/types";
+import { ProjectNodeModel } from "./project/types";
 import { getProjectNodes } from "./project/client";
 
-export interface ProjectCartSummary {
-  id: string;
-  name: string;
-  tag: ProjectTag;
-  timestamp: string;
-  totalPrice: number;
-  items: (Component & { qtyPrice: number })[];
-}
-
-/**
- * Calculates the summary data from current BOM items.
- */
 export const calculateProjectCost = async (
-  project: ProjectDefinition | ProjectModel,
+  projectId: string,
 ): Promise<number> => {
-  let nodes: any[] = [];
+  let nodes: ProjectNodeModel[] = [];
 
-  if ("nodes" in project) {
-    nodes = project.nodes;
-  } else {
-    nodes = await getProjectNodes(project.id);
+  nodes = await getProjectNodes(projectId);
+
+  if (nodes.length === 0) {
+    return 0;
   }
 
-  const componentIds = nodes.map((node) => node.componentId || node.id);
-  const components = await getAllComponents();
-  const items = componentIds
-    .map((id) => components.find((item) => item.id === id))
+  const allInventory = await getAllComponents();
+  const items: Component[] = nodes
+    .map((node) => node.componentId)
+    .map((id) => allInventory.find((item) => item.id === id))
     .filter((item) => item !== undefined);
 
-  const itemsWithQtyPrice = items.map((item) => ({
-    ...item,
-    qtyPrice: item.unitPrice * item.qty,
-  }));
-
-  const totalPrice = itemsWithQtyPrice.reduce(
-    (sum, item) => sum + item.qtyPrice,
+  const totalPrice = items.reduce(
+    (sum, item) => sum + item.unitPrice * item.qty,
     0,
   );
 

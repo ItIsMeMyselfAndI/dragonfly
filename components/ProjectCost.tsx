@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { calculateProjectCost } from "@/lib/project-calculator";
 import {
-  calculateProjectCost,
   ProjectCartSummary,
-} from "@/lib/project-calculator";
-import { ProjectDefinition, ProjectModel } from "@/lib/project/types";
+  ProjectDefinition,
+  ProjectModel,
+} from "@/lib/project/types";
 
 export function ProjectCost({
   project,
@@ -19,7 +20,7 @@ export function ProjectCost({
   useEffect(() => {
     if ("totalPrice" in project) return;
 
-    calculateProjectCost(project)
+    calculateProjectCost(project.id)
       .then(setCalculatedCost)
       .catch(() => setCalculatedCost(0));
   }, [project]);

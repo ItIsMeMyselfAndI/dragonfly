@@ -1,6 +1,5 @@
 "use client";
 import { Handle, Position } from "reactflow";
-import { Component } from "@/lib/inventory/types";
 
 export interface ComponentNode {
   id: string;

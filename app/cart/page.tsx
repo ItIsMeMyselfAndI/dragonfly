@@ -175,7 +175,10 @@ export default function CartScreen() {
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                         {(() => {
-                          const Icon = categoryIcons[p.tag] || Zap;
+                          const Icon =
+                            categoryIcons[
+                              p.tag.toLowerCase() as keyof typeof categoryIcons
+                            ] || Zap;
                           return <Icon size={18} />;
                         })()}
                       </div>

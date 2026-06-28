@@ -21,8 +21,11 @@ import { SubstituteSheet } from "@/features/bom/SubstituteSheet";
 import { compatibilityAlerts } from "@/features/bom/data";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAllProjects } from "@/lib/project/client";
-import { type ProjectModel } from "@/lib/project/types";
-import { type ProjectCartSummary } from "@/lib/project-calculator";
+import {
+  ProjectCartSummary,
+  ProjectTag,
+  type ProjectModel,
+} from "@/lib/project/types";
 import { ProjectCost } from "@/components/ProjectCost";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { Component, StockStatus } from "@/lib/inventory/types";
@@ -164,7 +167,7 @@ export default function BomScreen() {
           const summary: Omit<ProjectCartSummary, "totalPrice"> = {
             id: `dynamic-${Date.now()}`,
             name: selectedProject,
-            tag: "AI Generated",
+            tag: ProjectTag.NA,
             timestamp: new Date().toLocaleString(),
             items: items.map((item) => ({
               ...item,

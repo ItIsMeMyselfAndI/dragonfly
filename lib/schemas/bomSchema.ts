@@ -35,6 +35,12 @@ export const BomExtractionSchema: Schema = {
         required: ["severity", "title", "message"],
       },
     },
+    tag: {
+      type: Type.STRING,
+      enum: ["Robotics", "IoT", "Power", "Networking", "Mechatronics", "N/A"],
+      description: "The most appropriate category tag for this project.",
+    },
   },
-  required: ["items", "alerts"],
+  required: ["items", "alerts", "tag"],
+
 };
