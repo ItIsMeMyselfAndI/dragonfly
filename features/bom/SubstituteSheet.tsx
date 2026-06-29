@@ -6,19 +6,19 @@ import { useSheet } from "@/lib/sheet-context";
 import { useEffect, useMemo, useState } from "react";
 import { getAllComponents } from "@/lib/inventory/client";
 import { getAllProjects, getProjectSubstitutes } from "@/lib/project/client";
-import { Component, StockStatus } from "@/lib/inventory/types";
+import { ItemModel, StockStatus } from "@/lib/inventory/types";
 
 export function SubstituteSheet({
   component,
   projectName,
   onClose,
 }: {
-  component: Component | null;
+  component: ItemModel | null;
   projectName: string | null;
   onClose: () => void;
 }) {
   const { swap } = useBom();
-  const [inventory, setInventory] = useState<Component[]>([]);
+  const [inventory, setInventory] = useState<ItemModel[]>([]);
   const [projectSubsData, setProjectSubsData] = useState<any[]>([]);
 
   useEffect(() => {
@@ -36,14 +36,16 @@ export function SubstituteSheet({
   useEffect(() => {
     const loadProjectSubstitutes = async () => {
       if (!projectName || !component) return;
-      
+
       try {
         const projects = await getAllProjects();
-        const project = projects.find(p => p.name === projectName);
-        
+        const project = projects.find((p) => p.name === projectName);
+
         if (project) {
           const subs = await getProjectSubstitutes(project.id);
-          const componentSubs = subs.filter(s => s.originalComponentId === component.id);
+          const componentSubs = subs.filter(
+            (s) => s.originalComponentId === component.id,
+          );
           setProjectSubsData(componentSubs);
         }
       } catch (err) {
@@ -56,11 +58,13 @@ export function SubstituteSheet({
   const projectSubs = useMemo(() => {
     if (!component || projectSubsData.length === 0 || inventory.length === 0)
       return [];
-    
+
     return projectSubsData
-      .map((sub) => inventory.find((item) => item.id === sub.substituteComponentId))
-      .filter((item): item is Component => !!item)
-      .map((c: Component) => ({
+      .map((sub) =>
+        inventory.find((item) => item.id === sub.substituteComponentId),
+      )
+      .filter((item): item is ItemModel => !!item)
+      .map((c: ItemModel) => ({
         id: c.id,
         name: c.name,
         partNumber: c.partNumber,

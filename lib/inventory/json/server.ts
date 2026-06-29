@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { Component, StockStatus } from "../types";
+import { ItemModel, StockStatus } from "../types";
 
 const DATA_PATH = path.join(process.cwd(), "data", "inventory.json");
 
@@ -17,7 +17,7 @@ function mapStockStatus(stock: string): StockStatus {
   }
 }
 
-async function readInventory(): Promise<Component[]> {
+async function readInventory(): Promise<ItemModel[]> {
   try {
     const data = await fs.readFile(DATA_PATH, "utf-8");
     const components = JSON.parse(data);
@@ -33,24 +33,24 @@ async function readInventory(): Promise<Component[]> {
   }
 }
 
-async function writeInventory(inventory: Component[]): Promise<void> {
+async function writeInventory(inventory: ItemModel[]): Promise<void> {
   await fs.writeFile(DATA_PATH, JSON.stringify(inventory, null, 2), "utf-8");
 }
 
-export async function getAllComponents(): Promise<Component[]> {
+export async function getAllComponents(): Promise<ItemModel[]> {
   return await readInventory();
 }
 
 export async function getComponentById(
   id: string,
-): Promise<Component | undefined> {
+): Promise<ItemModel | undefined> {
   const inventory = await readInventory();
   return inventory.find((c) => c.id === id);
 }
 
 export async function createComponent(
-  component: Component,
-): Promise<Component> {
+  component: ItemModel,
+): Promise<ItemModel> {
   const inventory = await readInventory();
   inventory.push(component);
   await writeInventory(inventory);
@@ -59,8 +59,8 @@ export async function createComponent(
 
 export async function updateComponent(
   id: string,
-  updatedComponent: Partial<Component>,
-): Promise<Component | undefined> {
+  updatedComponent: Partial<ItemModel>,
+): Promise<ItemModel | undefined> {
   const inventory = await readInventory();
   const index = inventory.findIndex((c) => c.id === id);
   if (index === -1) return undefined;

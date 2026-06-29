@@ -4,7 +4,7 @@ export enum StockStatus {
   OUT = "OUT",
 }
 
-export enum ComponentCategory {
+export enum ItemCategory {
   MCU = "MCU",
   Sensor = "Sensor",
   Actuator = "Actuator",
@@ -18,7 +18,7 @@ export enum MountType {
   SMD = "SMD",
 }
 
-export interface ComponentDetails {
+export interface ItemDetails {
   componentId: string;
   // Universal
   mounting: MountType;
@@ -43,7 +43,7 @@ export interface ComponentDetails {
   contactRating?: string;
 }
 
-export interface Component {
+export interface ItemModel {
   id: string;
   name: string;
   partNumber: string;
@@ -52,7 +52,7 @@ export interface Component {
   qty: number;
   stock: StockStatus;
   stockCount?: number;
-  category: ComponentCategory;
+  category: ItemCategory;
   pins: string[];
-  details?: ComponentDetails;
+  details?: ItemDetails;
 }

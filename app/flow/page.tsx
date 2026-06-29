@@ -35,8 +35,11 @@ import {
 } from "@/lib/project/client";
 import { edgeColors } from "@/lib/project/constants";
 import { getAllComponents } from "@/lib/inventory/client";
-import { Component } from "@/lib/inventory/types";
-import { CustomNode, type ComponentNode } from "@/features/visual-flow/CustomNode";
+import { ItemModel } from "@/lib/inventory/types";
+import {
+  CustomNode,
+  type ComponentNode,
+} from "@/features/visual-flow/CustomNode";
 import {
   ProjectEdgeModel,
   ProjectModel,
@@ -54,7 +57,7 @@ export default function FlowScreen() {
   );
   const [currentNodes, setCurrentNodes] = useState<ProjectNodeModel[]>([]);
   const [currentEdges, setCurrentEdges] = useState<ProjectEdgeModel[]>([]);
-  const [inventory, setInventory] = useState<Component[]>([]);
+  const [inventory, setInventory] = useState<ItemModel[]>([]);
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -148,7 +151,14 @@ export default function FlowScreen() {
       })),
     );
     setIsInitialized(true);
-  }, [projectNodes, projectEdges, setNodes, setEdges, setSelected, currentNodes.length]);
+  }, [
+    projectNodes,
+    projectEdges,
+    setNodes,
+    setEdges,
+    setSelected,
+    currentNodes.length,
+  ]);
 
   // Handle user drawing new connection lines between handles
   const onConnect = useCallback(
@@ -234,7 +244,9 @@ export default function FlowScreen() {
       const deletedEdges = currentEdges.filter(
         (original) => !edges.some((uiEdge) => uiEdge.id === original.id),
       );
-      const edgeDeletePromises = deletedEdges.map((e) => deleteProjectEdge(e.id));
+      const edgeDeletePromises = deletedEdges.map((e) =>
+        deleteProjectEdge(e.id),
+      );
 
       // 3. Identify edge additions
       const newEdges = edges.filter(
@@ -261,7 +273,8 @@ export default function FlowScreen() {
         return (
           original.sourceId !== uiEdge.source ||
           original.targetId !== uiEdge.target ||
-          (original.sourceHandle || "bottom") !== (uiEdge.sourceHandle || "bottom") ||
+          (original.sourceHandle || "bottom") !==
+            (uiEdge.sourceHandle || "bottom") ||
           (original.targetHandle || "top") !== (uiEdge.targetHandle || "top")
         );
       });
@@ -324,7 +337,8 @@ export default function FlowScreen() {
             e.id === uiEdge.id &&
             e.sourceId === uiEdge.source &&
             e.targetId === uiEdge.target &&
-            (e.sourceHandle || "bottom") === (uiEdge.sourceHandle || "bottom") &&
+            (e.sourceHandle || "bottom") ===
+              (uiEdge.sourceHandle || "bottom") &&
             (e.targetHandle || "top") === (uiEdge.targetHandle || "top"),
         );
       });

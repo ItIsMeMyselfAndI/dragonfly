@@ -9,11 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Component,
-  ComponentDetails,
-  StockStatus,
-} from "@/lib/inventory/types";
+import { ItemModel, ItemDetails, StockStatus } from "@/lib/inventory/types";
 
 const stockMeta = {
   [StockStatus.IN_STOCK]: {
@@ -34,8 +30,8 @@ export function ComponentCard({
   c,
   onFindSubstitute,
 }: {
-  c: Component;
-  onFindSubstitute: (c: Component) => void;
+  c: ItemModel;
+  onFindSubstitute: (c: ItemModel) => void;
 }) {
   const { setQty } = useBom();
   console.log(c.stock);
@@ -186,8 +182,8 @@ function SpecGrid({
   d,
   category,
 }: {
-  d: ComponentDetails;
-  category: Component["category"];
+  d: ItemDetails;
+  category: ItemModel["category"];
 }) {
   const v = `${d.voltageMin}–${d.voltageMax} V`;
   return (

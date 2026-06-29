@@ -28,7 +28,7 @@ import {
 } from "@/lib/project/types";
 import { ProjectCost } from "@/components/ProjectCost";
 import { cn, formatRelativeTime } from "@/lib/utils";
-import { Component, StockStatus } from "@/lib/inventory/types";
+import { ItemModel, StockStatus } from "@/lib/inventory/types";
 
 const categoryIcons: Record<string, typeof Bot> = {
   Robotics: Bot,
@@ -86,7 +86,7 @@ export default function BomScreen() {
   const { items, alerts, total, itemCount, loadProject, pushToCart } = useBom();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [projects, setProjects] = useState<ProjectModel[]>([]);
-  const [sub, setSub] = useState<Component | null>(null);
+  const [sub, setSub] = useState<ItemModel | null>(null);
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [checkout, setCheckout] = useState<"idle" | "loading" | "done">("idle");
   const router = useRouter();

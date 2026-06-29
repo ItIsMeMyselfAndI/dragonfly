@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { BomExtractionSchema } from "@/lib/schemas/bomSchema";
 import { resolveComponentPricing } from "@/lib/pricing";
-import { Component, StockStatus } from "@/lib/inventory/types";
+import { ItemModel, StockStatus } from "@/lib/inventory/types";
 import { type BomAlert } from "@/features/bom/data";
 import { ProjectTagEnum } from "@/lib/project/types";
 
@@ -56,7 +56,7 @@ CRITICAL INSTRUCTIONS:
 
     // Parse the structured JSON response
     const extraction = JSON.parse(response.text || "{}") as {
-      items: Component[];
+      items: ItemModel[];
       alerts: BomAlert[];
       tag: ProjectTagEnum;
     };
@@ -64,7 +64,7 @@ CRITICAL INSTRUCTIONS:
 
     // 3. Pricing Engine Logic
     const itemsWithPricing = await Promise.all(
-      extractedItems.map(async (item: Component, index: number) => {
+      extractedItems.map(async (item: ItemModel, index: number) => {
         // Run real web search / scraping
         const storeOptions = await resolveComponentPricing(
           item.name,

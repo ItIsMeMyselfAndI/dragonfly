@@ -9,12 +9,12 @@ import {
 } from "react";
 import { getAllProjects, getProjectNodes } from "@/lib/project/client";
 import { getAllComponents } from "@/lib/inventory/client";
-import { Component } from "@/lib/inventory/types";
+import { ItemModel } from "@/lib/inventory/types";
 import { ProjectCartSummary, ProjectTagEnum } from "@/lib/project/types";
 import { BomAlert } from "./data";
 
 interface BomStore {
-  items: Component[];
+  items: ItemModel[];
   alerts: BomAlert[];
   total: number;
   itemCount: number;
@@ -22,12 +22,12 @@ interface BomStore {
   pushedHistory: ProjectCartSummary[];
   setQty: (id: string, qty: number) => void;
   remove: (id: string) => void;
-  swap: (id: string, next: Omit<Component, "qty">) => void;
+  swap: (id: string, next: Omit<ItemModel, "qty">) => void;
   loadProject: (projectName: string) => Promise<void>;
   loadDynamicProject: (
     projectName: string,
     tag: ProjectTagEnum,
-    newItems: Component[],
+    newItems: ItemModel[],
     newAlerts?: BomAlert[],
   ) => void;
   pushToCart: (summary: Omit<ProjectCartSummary, "totalPrice">) => void;
@@ -37,7 +37,7 @@ interface BomStore {
 const Ctx = createContext<BomStore | null>(null);
 
 export function BomProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<Component[]>([]);
+  const [items, setItems] = useState<ItemModel[]>([]);
   const [alerts, setAlerts] = useState<BomAlert[]>([]);
   const [projectInfo, setProjectInfo] = useState<{
     name: string;
@@ -57,7 +57,7 @@ export function BomProvider({ children }: { children: ReactNode }) {
     const components = nodes
       .map((node) => node.componentId)
       .map((id) => allInventory.find((item) => item.id === id))
-      .filter((item): item is Component => !!item);
+      .filter((item): item is ItemModel => !!item);
 
     setItems(components);
     setAlerts([]); // Clear dynamic alerts when loading from API
@@ -66,7 +66,7 @@ export function BomProvider({ children }: { children: ReactNode }) {
   const loadDynamicProject = (
     projectName: string,
     tag: ProjectTagEnum,
-    newItems: Component[],
+    newItems: ItemModel[],
     newAlerts: BomAlert[] = [],
   ) => {
     setProjectInfo({ name: projectName, tag });

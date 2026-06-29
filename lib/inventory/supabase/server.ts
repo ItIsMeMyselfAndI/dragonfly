@@ -1,15 +1,13 @@
-import { Component } from '../types';
-import { supabase } from '@/lib/supabase/client';
+import { ItemModel } from "../types";
+import { supabase } from "@/lib/supabase/client";
 
-export async function getAllComponents(): Promise<Component[]> {
-  const { data, error } = await supabase
-    .from('inventory')
-    .select('*');
+export async function getAllComponents(): Promise<ItemModel[]> {
+  const { data, error } = await supabase.from("inventory").select("*");
 
   if (error) throw new Error(`Error fetching components: ${error.message}`);
-  
+
   // Map snake_case from DB to camelCase for Frontend
-  return (data || []).map(item => ({
+  return (data || []).map((item) => ({
     id: item.id,
     name: item.name,
     partNumber: item.part_number,
@@ -24,15 +22,17 @@ export async function getAllComponents(): Promise<Component[]> {
   }));
 }
 
-export async function getComponentById(id: string): Promise<Component | undefined> {
+export async function getComponentById(
+  id: string,
+): Promise<ItemModel | undefined> {
   const { data, error } = await supabase
-    .from('inventory')
-    .select('*')
-    .eq('id', id)
+    .from("inventory")
+    .select("*")
+    .eq("id", id)
     .single();
 
   if (error) {
-    if (error.code === 'PGRST116') return undefined; // Not found
+    if (error.code === "PGRST116") return undefined; // Not found
     throw new Error(`Error fetching component: ${error.message}`);
   }
 
@@ -51,9 +51,11 @@ export async function getComponentById(id: string): Promise<Component | undefine
   };
 }
 
-export async function createComponent(component: Component): Promise<Component> {
+export async function createComponent(
+  component: ItemModel,
+): Promise<ItemModel> {
   const { data, error } = await supabase
-    .from('inventory')
+    .from("inventory")
     .insert([
       {
         id: component.id,
@@ -73,7 +75,7 @@ export async function createComponent(component: Component): Promise<Component> 
     .single();
 
   if (error) throw new Error(`Error creating component: ${error.message}`);
-  
+
   return {
     id: data.id,
     name: data.name,
@@ -91,25 +93,30 @@ export async function createComponent(component: Component): Promise<Component> 
 
 export async function updateComponent(
   id: string,
-  updatedComponent: Partial<Component>
-): Promise<Component | undefined> {
+  updatedComponent: Partial<ItemModel>,
+): Promise<ItemModel | undefined> {
   // Map camelCase to snake_case for the update
   const updatePayload: any = {};
-  if ('name' in updatedComponent) updatePayload.name = updatedComponent.name;
-  if ('partNumber' in updatedComponent) updatePayload.part_number = updatedComponent.partNumber;
-  if ('specs' in updatedComponent) updatePayload.specs = updatedComponent.specs;
-  if ('unitPrice' in updatedComponent) updatePayload.unit_price = updatedComponent.unitPrice;
-  if ('qty' in updatedComponent) updatePayload.qty = updatedComponent.qty;
-  if ('stock' in updatedComponent) updatePayload.stock = updatedComponent.stock;
-  if ('stockCount' in updatedComponent) updatePayload.stock_count = updatedComponent.stockCount;
-  if ('category' in updatedComponent) updatePayload.category = updatedComponent.category;
-  if ('pins' in updatedComponent) updatePayload.pins = updatedComponent.pins;
-  if ('details' in updatedComponent) updatePayload.details = updatedComponent.details;
+  if ("name" in updatedComponent) updatePayload.name = updatedComponent.name;
+  if ("partNumber" in updatedComponent)
+    updatePayload.part_number = updatedComponent.partNumber;
+  if ("specs" in updatedComponent) updatePayload.specs = updatedComponent.specs;
+  if ("unitPrice" in updatedComponent)
+    updatePayload.unit_price = updatedComponent.unitPrice;
+  if ("qty" in updatedComponent) updatePayload.qty = updatedComponent.qty;
+  if ("stock" in updatedComponent) updatePayload.stock = updatedComponent.stock;
+  if ("stockCount" in updatedComponent)
+    updatePayload.stock_count = updatedComponent.stockCount;
+  if ("category" in updatedComponent)
+    updatePayload.category = updatedComponent.category;
+  if ("pins" in updatedComponent) updatePayload.pins = updatedComponent.pins;
+  if ("details" in updatedComponent)
+    updatePayload.details = updatedComponent.details;
 
   const { data, error } = await supabase
-    .from('inventory')
+    .from("inventory")
     .update(updatePayload)
-    .eq('id', id)
+    .eq("id", id)
     .select()
     .single();
 
@@ -132,10 +139,7 @@ export async function updateComponent(
 }
 
 export async function deleteComponent(id: string): Promise<boolean> {
-  const { error } = await supabase
-    .from('inventory')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from("inventory").delete().eq("id", id);
 
   if (error) throw new Error(`Error deleting component: ${error.message}`);
   return true;
