@@ -3,6 +3,7 @@ import {
   ProjectNodeModel,
   ProjectEdgeModel,
   ProjectSubstituteModel,
+  ProjectComponentModel,
 } from "./types";
 
 // const API_BASE = "/api/v1/projects";
@@ -117,5 +118,26 @@ export async function getProjectSubstitutes(
 ): Promise<ProjectSubstituteModel[]> {
   const res = await fetch(`${API_BASE}/${projectId}/substitutes`);
   if (!res.ok) throw new Error("Failed to fetch project substitutes");
+  return res.json();
+}
+
+export async function getProjectComponents(
+  projectId: string,
+): Promise<ProjectComponentModel[]> {
+  const res = await fetch(`${API_BASE}/${projectId}/components`);
+  if (!res.ok) throw new Error("Failed to fetch project components");
+  return res.json();
+}
+
+export async function createProjectComponent(
+  projectId: string,
+  component: Omit<ProjectComponentModel, "projectId">,
+): Promise<ProjectComponentModel> {
+  const res = await fetch(`${API_BASE}/${projectId}/components`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(component),
+  });
+  if (!res.ok) throw new Error("Failed to create project component");
   return res.json();
 }

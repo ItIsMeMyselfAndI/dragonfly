@@ -4,6 +4,7 @@ import {
   ProjectNodeModel,
   ProjectEdgeModel,
   ProjectSubstituteModel,
+  ProjectComponentModel,
 } from '../types';
 
 export async function getAllProjects(): Promise<ProjectModel[]> {
@@ -300,13 +301,120 @@ export async function createSubstitute(substitute: ProjectSubstituteModel): Prom
     substituteComponentId: data.substitute_component_id,
   };
 }
+// --- Components ---
 
-export async function deleteSubstitute(id: string): Promise<boolean> {
+export async function getComponentsByProjectId(projectId: string): Promise<ProjectComponentModel[]> {
+  const { data, error } = await supabase
+    .from('project_components')
+    .select('*')
+    .eq('project_id', projectId);
+
+  if (error) throw new Error(`Error fetching components: ${error.message}`);
+
+  return (data || []).map(item => ({
+    id: item.id,
+    projectId: item.project_id,
+    inventoryId: item.inventory_id,
+    name: item.name,
+    partNumber: item.part_number,
+    specs: item.specs,
+    unitPrice: item.unit_price,
+    qty: item.qty,
+    category: item.category,
+    pins: item.pins,
+    details: item.details,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+  }));
+}
+
+export async function createComponent(component: ProjectComponentModel): Promise<ProjectComponentModel> {
+  const { data, error } = await supabase
+    .from('project_components')
+    .insert([
+      {
+        id: component.id,
+        project_id: component.projectId,
+        inventory_id: component.inventoryId,
+        name: component.name,
+        part_number: component.partNumber,
+        specs: component.specs,
+        unit_price: component.unitPrice,
+        qty: component.qty,
+        category: component.category,
+        pins: component.pins,
+        details: component.details,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) throw new Error(`Error creating component: ${error.message}`);
+
+  return {
+    id: data.id,
+    projectId: data.project_id,
+    inventoryId: data.inventory_id,
+    name: data.name,
+    partNumber: data.part_number,
+    specs: data.specs,
+    unitPrice: data.unit_price,
+    qty: data.qty,
+    category: data.category,
+    pins: data.pins,
+    details: data.details,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
+}
+
+export async function updateComponent(
+  id: string,
+  updated: Partial<ProjectComponentModel>,
+): Promise<ProjectComponentModel | undefined> {
+  const updatePayload: any = {};
+  if ('projectId' in updated) updatePayload.project_id = updated.projectId;
+  if ('inventoryId' in updated) updatePayload.inventory_id = updated.inventoryId;
+  if ('name' in updated) updatePayload.name = updated.name;
+  if ('partNumber' in updated) updatePayload.part_number = updated.partNumber;
+  if ('specs' in updated) updatePayload.specs = updated.specs;
+  if ('unitPrice' in updated) updatePayload.unit_price = updated.unitPrice;
+  if ('qty' in updated) updatePayload.qty = updated.qty;
+  if ('category' in updated) updatePayload.category = updated.category;
+  if ('pins' in updated) updatePayload.pins = updated.pins;
+  if ('details' in updated) updatePayload.details = updated.details;
+
+  const { data, error } = await supabase
+    .from('project_components')
+    .update(updatePayload)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Error updating component: ${error.message}`);
+  return data ? {
+    id: data.id,
+    projectId: data.project_id,
+    inventoryId: data.inventory_id,
+    name: data.name,
+    partNumber: data.part_number,
+    specs: data.specs,
+    unitPrice: data.unit_price,
+    qty: data.qty,
+    category: data.category,
+    pins: data.pins,
+    details: data.details,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  } : undefined;
+}
+
+export async function deleteComponent(id: string): Promise<boolean> {
   const { error } = await supabase
-    .from('project_substitutes')
+    .from('project_components')
     .delete()
     .eq('id', id);
 
-  if (error) throw new Error(`Error deleting substitute: ${error.message}`);
+  if (error) throw new Error(`Error deleting component: ${error.message}`);
   return true;
 }

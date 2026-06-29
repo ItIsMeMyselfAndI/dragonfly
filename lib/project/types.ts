@@ -82,3 +82,11 @@ export interface ProjectSubstituteModel {
   originalComponentId: string;
   substituteComponentId: string;
 }
+
+export interface ProjectComponentModel extends Omit<ItemModel, 'id' | 'stock' | 'stockCount'> {
+  id: string;
+  projectId: string;
+  inventoryId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}

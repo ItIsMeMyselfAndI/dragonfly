@@ -5,6 +5,7 @@ import {
   ProjectNodeModel,
   ProjectEdgeModel,
   ProjectSubstituteModel,
+  ProjectComponentModel,
 } from "../types";
 
 const PATHS = {
@@ -12,6 +13,7 @@ const PATHS = {
   nodes: path.join(process.cwd(), "data", "project_nodes.json"),
   edges: path.join(process.cwd(), "data", "project_edges.json"),
   substitutes: path.join(process.cwd(), "data", "project_substitutes.json"),
+  components: path.join(process.cwd(), "data", "project_components.json"),
 };
 
 async function readJson<T>(filePath: string): Promise<T[]> {
@@ -169,5 +171,43 @@ export async function deleteSubstitute(id: string): Promise<boolean> {
   if (index === -1) return false;
   substitutes.splice(index, 1);
   await writeJson(PATHS.substitutes, substitutes);
+  return true;
+}
+
+// Components
+export async function getComponentsByProjectId(
+  projectId: string,
+): Promise<ProjectComponentModel[]> {
+  const components = await readJson<ProjectComponentModel>(PATHS.components);
+  return components.filter((c) => c.projectId === projectId);
+}
+
+export async function createComponent(
+  component: ProjectComponentModel,
+): Promise<ProjectComponentModel> {
+  const components = await readJson<ProjectComponentModel>(PATHS.components);
+  components.push(component);
+  await writeJson(PATHS.components, components);
+  return component;
+}
+
+export async function updateComponent(
+  id: string,
+  updated: Partial<ProjectComponentModel>,
+): Promise<ProjectComponentModel | undefined> {
+  const components = await readJson<ProjectComponentModel>(PATHS.components);
+  const index = components.findIndex((c) => c.id === id);
+  if (index === -1) return undefined;
+  components[index] = { ...components[index], ...updated };
+  await writeJson(PATHS.components, components);
+  return components[index];
+}
+
+export async function deleteComponent(id: string): Promise<boolean> {
+  const components = await readJson<ProjectComponentModel>(PATHS.components);
+  const index = components.findIndex((c) => c.id === id);
+  if (index === -1) return false;
+  components.splice(index, 1);
+  await writeJson(PATHS.components, components);
   return true;
 }

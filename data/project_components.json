@@ -1,0 +1,163 @@
+[
+  {
+    "id": "pc_01",
+    "projectId": "proj_01",
+    "inventoryId": "comp_pwr_01",
+    "qty": 1,
+    "unitPrice": 823.6
+  },
+  {
+    "id": "pc_02",
+    "projectId": "proj_01",
+    "inventoryId": "comp_mcu_01",
+    "qty": 1,
+    "unitPrice": 516.2
+  },
+  {
+    "id": "pc_03",
+    "projectId": "proj_01",
+    "inventoryId": "comp_sns_01",
+    "qty": 1,
+    "unitPrice": 725.0
+  },
+  {
+    "id": "pc_04",
+    "projectId": "proj_01",
+    "inventoryId": "comp_act_01",
+    "qty": 1,
+    "unitPrice": 275.5
+  },
+  {
+    "id": "pc_05",
+    "projectId": "proj_01",
+    "inventoryId": "comp_log_01",
+    "qty": 1,
+    "unitPrice": 31.9
+  },
+  {
+    "id": "pc_06",
+    "projectId": "proj_01",
+    "inventoryId": "comp_act_02",
+    "qty": 1,
+    "unitPrice": 185.6
+  },
+  {
+    "id": "pc_07",
+    "projectId": "proj_01",
+    "inventoryId": "comp_act_04",
+    "qty": 1,
+    "unitPrice": 81.2
+  },
+  {
+    "id": "pc_08",
+    "projectId": "proj_02",
+    "inventoryId": "comp_pwr_02",
+    "qty": 1,
+    "unitPrice": 35.0
+  },
+  {
+    "id": "pc_09",
+    "projectId": "proj_02",
+    "inventoryId": "comp_sns_02",
+    "qty": 1,
+    "unitPrice": 450.0
+  },
+  {
+    "id": "pc_10",
+    "projectId": "proj_02",
+    "inventoryId": "comp_mcu_02",
+    "qty": 1,
+    "unitPrice": 395.0
+  },
+  {
+    "id": "pc_11",
+    "projectId": "proj_02",
+    "inventoryId": "comp_act_03",
+    "qty": 1,
+    "unitPrice": 185.0
+  },
+  {
+    "id": "pc_12",
+    "projectId": "proj_03",
+    "inventoryId": "comp_pwr_04",
+    "qty": 1,
+    "unitPrice": 12.0
+  },
+  {
+    "id": "pc_13",
+    "projectId": "proj_03",
+    "inventoryId": "comp_sns_03",
+    "qty": 1,
+    "unitPrice": 65.5
+  },
+  {
+    "id": "pc_14",
+    "projectId": "proj_03",
+    "inventoryId": "comp_pas_01",
+    "qty": 1,
+    "unitPrice": 2.5
+  },
+  {
+    "id": "pc_15",
+    "projectId": "proj_03",
+    "inventoryId": "comp_pas_02",
+    "qty": 1,
+    "unitPrice": 8.0
+  },
+  {
+    "id": "pc_16",
+    "projectId": "proj_03",
+    "inventoryId": "comp_log_02",
+    "qty": 1,
+    "unitPrice": 15.0
+  },
+  {
+    "id": "pc_17",
+    "projectId": "proj_03",
+    "inventoryId": "comp_act_04",
+    "qty": 1,
+    "unitPrice": 81.2
+  },
+  {
+    "id": "pc_18",
+    "projectId": "proj_04",
+    "inventoryId": "comp_pwr_trans",
+    "qty": 1,
+    "unitPrice": 350.0
+  },
+  {
+    "id": "pc_19",
+    "projectId": "proj_04",
+    "inventoryId": "comp_pwr_rect",
+    "qty": 1,
+    "unitPrice": 25.0
+  },
+  {
+    "id": "pc_20",
+    "projectId": "proj_04",
+    "inventoryId": "comp_pwr_03",
+    "qty": 1,
+    "unitPrice": 45.0
+  },
+  {
+    "id": "pc_21",
+    "projectId": "proj_04",
+    "inventoryId": "comp_act_05",
+    "qty": 1,
+    "unitPrice": 75.0
+  },
+  {
+    "id": "pc_22",
+    "projectId": "proj_04",
+    "inventoryId": "comp_log_zener",
+    "qty": 1,
+    "unitPrice": 5.5
+  },
+  {
+    "id": "pc_23",
+    "projectId": "proj_04",
+    "inventoryId": "comp_act_led",
+    "qty": 1,
+    "unitPrice": 3.0
+  }
+]
