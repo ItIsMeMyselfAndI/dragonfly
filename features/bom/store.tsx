@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getAllProjects, getProjectNodes } from "@/lib/project/client";
+import { getAllProjects, getProjectNodes, updateProject } from "@/lib/project/client";
 import { getAllComponents } from "@/lib/inventory/client";
 import { Component } from "@/lib/inventory/types";
 import { ProjectCartSummary, ProjectTagEnum } from "@/lib/project/types";
@@ -18,7 +18,7 @@ interface BomStore {
   alerts: BomAlert[];
   total: number;
   itemCount: number;
-  projectInfo: { name: string; tag: ProjectTagEnum } | null;
+  projectInfo: { id: string; name: string; tag: ProjectTagEnum } | null;
   pushedHistory: ProjectCartSummary[];
   setQty: (id: string, qty: number) => void;
   remove: (id: string) => void;
@@ -40,6 +40,7 @@ export function BomProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Component[]>([]);
   const [alerts, setAlerts] = useState<BomAlert[]>([]);
   const [projectInfo, setProjectInfo] = useState<{
+    id: string;
     name: string;
     tag: ProjectTagEnum;
   } | null>(null);
@@ -50,7 +51,14 @@ export function BomProvider({ children }: { children: ReactNode }) {
     const project = projects.find((p) => p.name === projectName);
     if (!project) return;
 
-    setProjectInfo({ name: project.name, tag: project.tag });
+    setProjectInfo({ id: project.id, name: project.name, tag: project.tag });
+    
+    // Load cart history if it exists
+    if ((project as any).cart) {
+      setPushedHistory((project as any).cart);
+    } else {
+      setPushedHistory([]);
+    }
 
     const nodes = await getProjectNodes(project.id);
     const allInventory = await getAllComponents();
@@ -69,7 +77,7 @@ export function BomProvider({ children }: { children: ReactNode }) {
     newItems: Component[],
     newAlerts: BomAlert[] = [],
   ) => {
-    setProjectInfo({ name: projectName, tag });
+    setProjectInfo({ id: `dynamic-${Date.now()}`, name: projectName, tag });
     setItems(newItems);
     setAlerts(newAlerts);
   };
@@ -77,9 +85,21 @@ export function BomProvider({ children }: { children: ReactNode }) {
     (summary: Omit<ProjectCartSummary, "totalPrice">) => {
       const totalPrice = summary.items.reduce((s, i) => s + i.qtyPrice, 0);
       const fullSummary: ProjectCartSummary = { ...summary, totalPrice };
-      setPushedHistory((prev) => [...prev, fullSummary]);
+      
+      setPushedHistory((prev) => {
+        const next = [...prev, fullSummary];
+        
+        // Synchronize with backend JSON database using existing wrapper
+        if (projectInfo && !projectInfo.id.startsWith("dynamic-")) {
+          updateProject(projectInfo.id, { cart: next } as any).catch((err) => 
+            console.error("Failed to sync cart to backend JSON database:", err)
+          );
+        }
+        
+        return next;
+      });
     },
-    [],
+    [projectInfo],
   );
   const moveToLastCart = useCallback(
     (index: number) =>

@@ -3,7 +3,13 @@
     "id": "proj_01",
     "name": "Line-Following Robot",
     "time": "2026-06-26T00:00:00.000Z",
-    "tag": "Robotics"
+    "tag": "Robotics",
+    "cart": [
+      {
+        "id": "1",
+        "qty": 2
+      }
+    ]
   },
   {
     "id": "proj_02",

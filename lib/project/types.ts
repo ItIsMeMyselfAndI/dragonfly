@@ -47,6 +47,7 @@ export interface ProjectDefinition {
   name: string;
   time: string;
   tag: ProjectTagEnum;
+  cart?: any[];
   nodes: ProjectNode[];
   edges: ProjectEdge[];
   substitutes?: Record<string, string[]>;
