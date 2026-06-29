@@ -14,6 +14,8 @@ import {
   Wifi,
   Network,
   Cpu,
+  FileText,
+  Download,
 } from "lucide-react";
 import { useBom } from "@/features/bom/store";
 import { ComponentCard } from "@/features/bom/ComponentCard";
@@ -35,6 +37,13 @@ import {
 import { ProjectCost } from "@/components/ProjectCost";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { StockStatus } from "@/lib/inventory/types";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const categoryIcons: Record<string, typeof Bot> = {
   Robotics: Bot,
@@ -106,6 +115,7 @@ export default function BomScreen() {
   const [sub, setSub] = useState<ProjectComponentModel | null>(null); // Note: updated to use ProjectComponentModel
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [checkout, setCheckout] = useState<"idle" | "loading" | "done">("idle");
+  const [isPdfOpen, setIsPdfOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -160,13 +170,17 @@ export default function BomScreen() {
 
   const handleCheckout = async () => {
     setCheckout("loading");
-    
+
     if (selectedProject) {
       const project = projects.find((p) => p.name === selectedProject);
       if (project) {
         try {
-          const deletes = originalComponents.filter((oc) => !components.some((c) => c.id === oc.id));
-          const creates = components.filter((c) => !originalComponents.some((oc) => oc.id === c.id));
+          const deletes = originalComponents.filter(
+            (oc) => !components.some((c) => c.id === oc.id),
+          );
+          const creates = components.filter(
+            (c) => !originalComponents.some((oc) => oc.id === c.id),
+          );
           const updates = components.filter((c) => {
             const oc = originalComponents.find((o) => o.id === c.id);
             if (!oc) return false;
@@ -183,13 +197,28 @@ export default function BomScreen() {
           );
           await Promise.all(
             creates.map((c) => {
-              const { projectId, createdAt, updatedAt, stock, stockCount, ...rest } = c;
+              const {
+                projectId,
+                createdAt,
+                updatedAt,
+                stock,
+                stockCount,
+                ...rest
+              } = c;
               return createProjectComponent(project.id, rest as any);
             }),
           );
           await Promise.all(
             updates.map((c) => {
-              const { id, projectId, createdAt, updatedAt, stock, stockCount, ...rest } = c;
+              const {
+                id,
+                projectId,
+                createdAt,
+                updatedAt,
+                stock,
+                stockCount,
+                ...rest
+              } = c;
               return updateProjectComponent(project.id, c.id, rest as any);
             }),
           );
@@ -225,7 +254,7 @@ export default function BomScreen() {
         pushToCart(summary);
       }
     }
-    
+
     setCheckout("done");
     setTimeout(() => {
       setCheckout("idle");
@@ -255,6 +284,12 @@ export default function BomScreen() {
               {components.length} components · {itemCount} units
             </p>
           </div>
+          <button
+            onClick={() => setIsPdfOpen(true)}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+          >
+            <FileText size={18} />
+          </button>
         </header>
 
         {/* Compatibility alert */}
@@ -434,48 +469,69 @@ export default function BomScreen() {
                         : "glow-primary bg-primary",
                     )}
                   >
-                  <AnimatePresence mode="wait">
-                    {checkout === "idle" && (
-                      <motion.span
-                        key="i"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-center gap-2"
-                      >
-                        {hasIssues ? "Fix issues to proceed" : "Push to cart"}
-                        {!hasIssues && <ArrowRight size={16} />}
-                      </motion.span>
-                    )}
-                    {checkout === "loading" && (
-                      <motion.span
-                        key="l"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-center gap-2"
-                      >
-                        <Loader2 size={16} className="animate-spin" /> Pushing…
-                      </motion.span>
-                    )}
-                    {checkout === "done" && (
-                      <motion.span
-                        key="d"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-center gap-2"
-                      >
-                        <Check size={16} /> Sent
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
+                    <AnimatePresence mode="wait">
+                      {checkout === "idle" && (
+                        <motion.span
+                          key="i"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center gap-2"
+                        >
+                          {hasIssues ? "Fix issues to proceed" : "Push to cart"}
+                          {!hasIssues && <ArrowRight size={16} />}
+                        </motion.span>
+                      )}
+                      {checkout === "loading" && (
+                        <motion.span
+                          key="l"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center gap-2"
+                        >
+                          <Loader2 size={16} className="animate-spin" />{" "}
+                          Pushing…
+                        </motion.span>
+                      )}
+                      {checkout === "done" && (
+                        <motion.span
+                          key="d"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center gap-2"
+                        >
+                          <Check size={16} /> Sent
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   </motion.button>
                 </div>
               );
             })()}
           </motion.div>
         </div>
+
+        <Dialog open={isPdfOpen} onOpenChange={setIsPdfOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Specs Calculation Report</DialogTitle>
+            </DialogHeader>
+            <div className="flex h-96 items-center justify-center rounded-lg border border-dashed border-white/10 overflow-hidden">
+              <iframe src="/sample.pdf" className="h-full w-full" title="Specs Calculation Report" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsPdfOpen(false)}>
+                Close
+              </Button>
+              <Button>
+                <Download size={16} />
+                Download
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <SubstituteSheet
           component={sub}
