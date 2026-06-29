@@ -22,6 +22,7 @@ import { useBom } from "@/features/bom/store";
 import { generateBOM } from "@/lib/apis/generate/client";
 import Link from "next/link";
 import Image from "next/image";
+import { SpecsGeneratorButton } from "@/components/SpecsGeneratorButton";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { getAllProjects } from "@/lib/apis/project/client";
 import { ProjectCost } from "@/components/ProjectCost";
@@ -326,6 +327,13 @@ export default function Home() {
           </>
         )}
       </motion.button>
+      
+      <SpecsGeneratorButton 
+        prompt={prompt} 
+        image={selectedFiles.length > 0 ? selectedFiles[0].file : null} 
+        projectName={prompt || "Extracted Schematic"}
+      />
+
       {showTip && (
         <motion.p
           initial={{ opacity: 0, y: -5 }}
