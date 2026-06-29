@@ -51,7 +51,7 @@ export interface ItemModel {
   unitPrice: number;
   qty: number;
   stock: StockStatus;
-  stockCount?: number;
+  stockCount: number;
   category: ItemCategory;
   pins: string[];
   details?: ItemDetails;

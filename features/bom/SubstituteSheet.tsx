@@ -6,19 +6,20 @@ import { useSheet } from "@/lib/sheet-context";
 import { useEffect, useMemo, useState } from "react";
 import { getAllItems } from "@/lib/inventory/client";
 import { getAllProjects, getProjectSubstitutes } from "@/lib/project/client";
-import { ItemModel, StockStatus } from "@/lib/inventory/types";
+import { StockStatus } from "@/lib/inventory/types";
+import { ProjectComponentModel } from "@/lib/project/types";
 
 export function SubstituteSheet({
   component,
   projectName,
   onClose,
 }: {
-  component: ItemModel | null;
+  component: ProjectComponentModel | null;
   projectName: string | null;
   onClose: () => void;
 }) {
   const { swap } = useBom();
-  const [inventory, setInventory] = useState<ItemModel[]>([]);
+  const [inventory, setInventory] = useState<any[]>([]); // Using any for inventory since it's an ItemModel, but I need to handle it properly
   const [projectSubsData, setProjectSubsData] = useState<any[]>([]);
 
   useEffect(() => {
@@ -60,14 +61,19 @@ export function SubstituteSheet({
       return [];
 
     return projectSubsData
-      .map((sub) => inventory.find((item) => item.id === sub.substituteItemId))
-      .filter((item): item is ItemModel => !!item)
-      .map((c: ItemModel) => ({
+      .map((sub) =>
+        inventory.find((item) => item.id === sub.substituteComponentId),
+      )
+      .filter((item): item is any => !!item)
+      .map((c: any) => ({
         id: c.id,
         name: c.name,
         partNumber: c.partNumber,
         specs: c.specs,
         unitPrice: c.unitPrice,
+        category: c.category,
+        pins: c.pins,
+        details: c.details,
         matchScore: 100, // Project-approved
         note: "Project-approved substitute.",
       }));
@@ -113,7 +119,9 @@ export function SubstituteSheet({
   useEffect(() => {
     if (subs.length === 1 && component) {
       swap(component.id, {
-        id: subs[0].id, // Fixed: use substitute's ID
+        id: subs[0].id,
+        projectId: component.projectId,
+        inventoryId: subs[0].id,
         name: subs[0].name,
         partNumber: subs[0].partNumber,
         specs: subs[0].specs,
@@ -208,7 +216,9 @@ export function SubstituteSheet({
                     whileTap={{ scale: 0.97 }}
                     onClick={() => {
                       swap(component.id, {
-                        id: s.id, // Fixed: use substitute's ID
+                        id: s.id,
+                        projectId: component.projectId,
+                        inventoryId: s.id,
                         name: s.name,
                         partNumber: s.partNumber,
                         specs: s.specs,

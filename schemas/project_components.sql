@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS project_components (
 -- Index for faster lookups by project
 CREATE INDEX IF NOT EXISTS idx_project_components_project_id ON project_components(project_id);
 
--- Seed Data (Simplified for this example)
+-- Seed Data (Without stock/stock_count as they are now dynamic)
 INSERT INTO project_components (id, project_id, inventory_id, name, part_number, specs, unit_price, qty, category, pins) VALUES
 ('pc_01', 'proj_01', 'comp_pwr_01', 'Li-Ion Battery Pack', '18650-2S', '7.4V · 2600mAh · JST', 823.6, 1, 'Power', '[]'),
 ('pc_02', 'proj_01', 'comp_mcu_01', 'Arduino Nano', 'ATMEGA328P-NANO', '5V · 16MHz · 22 GPIO', 516.2, 1, 'MCU', '["D0", "D1", "D2", "5V", "GND", "VIN"]'),
@@ -45,4 +45,3 @@ INSERT INTO project_components (id, project_id, inventory_id, name, part_number,
 ('pc_21', 'proj_04', 'comp_act_05', '12V SPDT Relay Module', 'SRD-12VDC-SL-C', '10A 250VAC · Optoisolated', 75.0, 1, 'Actuator', '[]'),
 ('pc_22', 'proj_04', 'comp_log_zener', '12V Zener Diode', '1N4742A', '12V · 1W', 5.5, 1, 'Logic', '[]'),
 ('pc_23', 'proj_04', 'comp_act_led', 'Status LED (Green)', 'LED-5MM-GN', '5mm · Green', 3.0, 1, 'Actuator', '[]')
-ON CONFLICT (id) DO NOTHING;

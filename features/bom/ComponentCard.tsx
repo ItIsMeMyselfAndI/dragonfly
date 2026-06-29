@@ -9,7 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ItemModel, ItemDetails, StockStatus } from "@/lib/inventory/types";
+import { ItemDetails, StockStatus } from "@/lib/inventory/types";
+import { ProjectComponentModel } from "@/lib/project/types";
 
 const stockMeta = {
   [StockStatus.IN_STOCK]: {
@@ -30,12 +31,12 @@ export function ComponentCard({
   c,
   onFindSubstitute,
 }: {
-  c: ItemModel;
-  onFindSubstitute: (c: ItemModel) => void;
+  c: ProjectComponentModel;
+  onFindSubstitute: (c: ProjectComponentModel) => void;
 }) {
   const { setQty } = useBom();
-  console.log(c.stock);
   const isOut = c.stock === StockStatus.OUT;
+  console.log(JSON.stringify(c));
   const [open, setOpen] = useState(false);
 
   return (
@@ -127,17 +128,21 @@ export function ComponentCard({
         <div className="flex items-center gap-2 rounded-full bg-white/[0.04] p-1">
           <button
             onClick={() => setQty(c.id, c.qty - 1)}
-            disabled={c.qty <= 0}
+            disabled={c.qty <= 0 || isOut}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-elevated text-muted-foreground disabled:opacity-40"
           >
             <Minus size={14} />
           </button>
-          <span className="w-6 text-center font-mono text-sm tabular-nums">
-            {c.qty}
-          </span>
+          <div className="flex items-baseline font-mono text-sm tabular-nums">
+            <span className="w-6 text-center">{c.qty}</span>
+            <span className="text-[10px] text-muted-foreground">
+              /{c.stockCount}
+            </span>
+          </div>
           <button
             onClick={() => setQty(c.id, c.qty + 1)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
+            disabled={c.qty >= c.stockCount || isOut}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
           >
             <Plus size={14} />
           </button>
@@ -146,6 +151,7 @@ export function ComponentCard({
     </motion.article>
   );
 }
+// ... SpecGrid, Row, Group remain the same
 
 function Row({ label, value }: { label: string; value?: string | number }) {
   if (value === undefined || value === null || value === "") return null;
@@ -183,7 +189,7 @@ function SpecGrid({
   category,
 }: {
   d: ItemDetails;
-  category: ItemModel["category"];
+  category: ProjectComponentModel["category"];
 }) {
   const v = `${d.voltageMin}–${d.voltageMax} V`;
   return (

@@ -7,14 +7,18 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getAllProjects, getProjectNodes } from "@/lib/project/client";
-import { getAllItems } from "@/lib/inventory/client";
-import { ItemModel } from "@/lib/inventory/types";
-import { ProjectCartSummary, ProjectTagEnum } from "@/lib/project/types";
+import { getAllProjects, getProjectComponents } from "@/lib/project/client";
+import { ItemModel, StockStatus } from "@/lib/inventory/types";
+import {
+  ProjectCartSummary,
+  ProjectTagEnum,
+  ProjectComponentModel,
+} from "@/lib/project/types";
 import { BomAlert } from "./data";
+import { getAllItems } from "@/lib/inventory/client";
 
 interface BomStore {
-  items: ItemModel[];
+  components: ProjectComponentModel[];
   alerts: BomAlert[];
   total: number;
   itemCount: number;
@@ -22,12 +26,12 @@ interface BomStore {
   pushedHistory: ProjectCartSummary[];
   setQty: (id: string, qty: number) => void;
   remove: (id: string) => void;
-  swap: (id: string, next: Omit<ItemModel, "qty">) => void;
+  swap: (id: string, next: Omit<ProjectComponentModel, "qty">) => void;
   loadProject: (projectName: string) => Promise<void>;
   loadDynamicProject: (
     projectName: string,
     tag: ProjectTagEnum,
-    newItems: ItemModel[],
+    newComponents: ProjectComponentModel[],
     newAlerts?: BomAlert[],
   ) => void;
   pushToCart: (summary: Omit<ProjectCartSummary, "totalPrice">) => void;
@@ -37,7 +41,7 @@ interface BomStore {
 const Ctx = createContext<BomStore | null>(null);
 
 export function BomProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<ItemModel[]>([]);
+  const [components, setComponents] = useState<ProjectComponentModel[]>([]);
   const [alerts, setAlerts] = useState<BomAlert[]>([]);
   const [projectInfo, setProjectInfo] = useState<{
     name: string;
@@ -52,25 +56,20 @@ export function BomProvider({ children }: { children: ReactNode }) {
 
     setProjectInfo({ name: project.name, tag: project.tag });
 
-    const nodes = await getProjectNodes(project.id);
-    const allInventory = await getAllItems();
-    const components = nodes
-      .map((node) => node.componentId)
-      .map((id) => allInventory.find((item) => item.id === id))
-      .filter((item): item is ItemModel => !!item);
+    const components = await getProjectComponents(project.id);
 
-    setItems(components);
+    setComponents(components);
     setAlerts([]); // Clear dynamic alerts when loading from API
   };
 
   const loadDynamicProject = (
     projectName: string,
     tag: ProjectTagEnum,
-    newItems: ItemModel[],
+    newComponents: ProjectComponentModel[],
     newAlerts: BomAlert[] = [],
   ) => {
     setProjectInfo({ name: projectName, tag });
-    setItems(newItems);
+    setComponents(newComponents);
     setAlerts(newAlerts);
   };
   const pushToCart = useCallback(
@@ -93,25 +92,25 @@ export function BomProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<BomStore>(() => {
-    const total = (items || []).reduce(
+    const total = (components || []).reduce(
       (s, i) => s + (i.unitPrice || 0) * (i.qty || 1),
       0,
     );
-    const itemCount = (items || []).reduce((s, i) => s + (i.qty || 1), 0);
+    const itemCount = (components || []).reduce((s, i) => s + (i.qty || 1), 0);
     return {
-      items: items || [],
+      components: components || [],
       alerts: alerts || [],
       total,
       itemCount,
       projectInfo,
       pushedHistory,
       setQty: (id, qty) =>
-        setItems((prev) =>
+        setComponents((prev) =>
           prev.map((i) => (i.id === id ? { ...i, qty: Math.max(0, qty) } : i)),
         ),
-      remove: (id) => setItems((prev) => prev.filter((i) => i.id !== id)),
+      remove: (id) => setComponents((prev) => prev.filter((i) => i.id !== id)),
       swap: (id, next) =>
-        setItems((prev) =>
+        setComponents((prev) =>
           prev.map((i) => (i.id === id ? { ...next, qty: i.qty } : i)),
         ),
       loadProject: async (name) => await loadProject(name),
@@ -119,7 +118,14 @@ export function BomProvider({ children }: { children: ReactNode }) {
       pushToCart,
       moveToLastCart,
     };
-  }, [items, alerts, projectInfo, pushedHistory, pushToCart, moveToLastCart]);
+  }, [
+    components,
+    alerts,
+    projectInfo,
+    pushedHistory,
+    pushToCart,
+    moveToLastCart,
+  ]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

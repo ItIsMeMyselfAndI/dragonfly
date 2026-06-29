@@ -23,12 +23,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getAllProjects } from "@/lib/project/client";
 import {
   ProjectCartSummary,
+  ProjectComponentModel,
   ProjectTagEnum,
   type ProjectModel,
 } from "@/lib/project/types";
 import { ProjectCost } from "@/components/ProjectCost";
 import { cn, formatRelativeTime } from "@/lib/utils";
-import { ItemModel, StockStatus } from "@/lib/inventory/types";
+import { StockStatus } from "@/lib/inventory/types";
 
 const categoryIcons: Record<string, typeof Bot> = {
   Robotics: Bot,
@@ -83,10 +84,11 @@ function ProjectItem({
 }
 
 export default function BomScreen() {
-  const { items, alerts, total, itemCount, loadProject, pushToCart } = useBom();
+  const { components, alerts, total, itemCount, loadProject, pushToCart } =
+    useBom();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [projects, setProjects] = useState<ProjectModel[]>([]);
-  const [sub, setSub] = useState<ItemModel | null>(null);
+  const [sub, setSub] = useState<ProjectComponentModel | null>(null); // Note: updated to use ProjectComponentModel
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [checkout, setCheckout] = useState<"idle" | "loading" | "done">("idle");
   const router = useRouter();
@@ -104,8 +106,6 @@ export default function BomScreen() {
         if ((generate === "true" || generate === "dynamic") && prompt) {
           const decodedPrompt = decodeURIComponent(prompt);
           setSelectedProject(decodedPrompt);
-          // We should probably also load the project data here if it's a dynamic one,
-          // but for now, we'll just set the active project name.
         }
       } catch (e) {
         console.error("Failed to initialize BOM screen", e);
@@ -156,20 +156,20 @@ export default function BomScreen() {
             name: project.name,
             tag: project.tag,
             timestamp: new Date().toLocaleString(),
-            items: items.map((item) => ({
+            items: components.map((item) => ({
               ...item,
               qtyPrice: item.unitPrice * item.qty,
             })),
           };
           pushToCart(summary);
-        } else if (items.length > 0) {
+        } else if (components.length > 0) {
           // Dynamic AI Project
           const summary: Omit<ProjectCartSummary, "totalPrice"> = {
             id: `dynamic-${Date.now()}`,
             name: selectedProject,
             tag: ProjectTagEnum.NA,
             timestamp: new Date().toLocaleString(),
-            items: items.map((item) => ({
+            items: components.map((item) => ({
               ...item,
               qtyPrice: item.unitPrice * item.qty,
             })),
@@ -200,7 +200,7 @@ export default function BomScreen() {
               {selectedProject}
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              {items.length} components · {itemCount} units
+              {components.length} components · {itemCount} units
             </p>
           </div>
         </header>
@@ -208,8 +208,8 @@ export default function BomScreen() {
         {/* Compatibility alert */}
         <AnimatePresence>
           {!alertDismissed &&
-            (items.length > 0 &&
-            items.every((i) => i.stock === StockStatus.IN_STOCK) &&
+            (components.length > 0 &&
+            components.every((i) => i.stock === StockStatus.IN_STOCK) &&
             alerts.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
@@ -241,9 +241,9 @@ export default function BomScreen() {
                 ...compatibilityAlerts.filter(
                   (a) =>
                     !a.componentId ||
-                    items.some((item) => item.id === a.componentId),
+                    components.some((item) => item.id === a.componentId),
                 ),
-                ...items
+                ...components
                   .filter((i) => i.stock === StockStatus.OUT)
                   .map((i) => ({
                     id: `stock-${i.id}`,
@@ -299,7 +299,7 @@ export default function BomScreen() {
                     {a.componentId && (
                       <button
                         onClick={() => {
-                          const comp = items.find(
+                          const comp = components.find(
                             (i) => i.id === a.componentId,
                           );
                           if (comp) setSub(comp);
@@ -323,7 +323,7 @@ export default function BomScreen() {
 
         {/* Component feed */}
         <div className="flex flex-col gap-3">
-          {items.map((c) => (
+          {components.map((c) => (
             <ComponentCard key={c.id} c={c} onFindSubstitute={setSub} />
           ))}
         </div>
@@ -349,11 +349,11 @@ export default function BomScreen() {
             </div>
             {(() => {
               const hasIssues =
-                items.some((i) => i.stock === StockStatus.OUT) ||
+                components.some((i) => i.stock === StockStatus.OUT) ||
                 compatibilityAlerts.some(
                   (a) =>
                     !a.componentId ||
-                    items.some((item) => item.id === a.componentId),
+                    components.some((item) => item.id === a.componentId),
                 );
 
               return (
