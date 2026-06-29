@@ -137,7 +137,11 @@ export default function BomScreen() {
     async function init() {
       try {
         const data = await getAllProjects();
-        setProjects(data);
+        setProjects((prev) => {
+          // Merge backend projects with any dynamic projects already in state
+          const combined = [...data, ...prev.filter(p => !data.find(bp => bp.id === p.id))];
+          return combined;
+        });
 
         if ((generate === "true" || generate === "dynamic") && prompt) {
           const decodedPrompt = decodeURIComponent(prompt);

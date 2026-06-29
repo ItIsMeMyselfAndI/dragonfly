@@ -20,9 +20,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useBom } from "@/features/bom/store";
 import { useFlow } from "@/features/visual-flow/store";
-import { generateBOM } from "@/lib/apis/generate/client";
-import { generateSpecs } from "@/lib/apis/generate/specsClient";
-import { downloadReport } from "@/lib/apis/pdf/client";
 import Link from "next/link";
 import Image from "next/image";
 import { cn, formatRelativeTime } from "@/lib/utils";

@@ -72,14 +72,17 @@ export default function FlowScreen() {
   useEffect(() => {
     Promise.all([getAllProjects(), getAllItems()])
       .then(([projs, inv]) => {
-        setProjects(projs);
+        setProjects((prev: ProjectModel[]) => {
+          const newProjects = [...projs, ...prev.filter((p: ProjectModel) => !projs.find((bp: ProjectModel) => bp.id === p.id))];
+          return newProjects;
+        });
         setInventory(inv);
         if (projs.length > 0 && !currentProject) {
           setCurrentProject(projs[0]);
         }
       })
       .catch((err) => console.error("Failed to load initial data:", err));
-  }, [currentProject, setProjects, setInventory, setCurrentProject]);
+  }, [setProjects, setInventory, setCurrentProject]); // Removed currentProject from deps to prevent reset loop
 
   // Fetch nodes and edges whenever the active project changes
   useEffect(() => {
@@ -376,17 +379,17 @@ export default function FlowScreen() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="flex items-center gap-2 rounded-full"
+                className="flex items-center gap-2 rounded-full max-w-[200px]"
               >
-                {currentProject.name} <ChevronDown size={16} />
+                <span className="truncate">{currentProject.name}</span> <ChevronDown size={16} />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="max-w-[250px]">
               {projects.map((project) => (
                 <DropdownMenuItem
                   key={project.id}
                   onClick={() => setCurrentProject(project)}
-                  className="focus:bg-primary/20 focus:text-primary transition-colors"
+                  className="focus:bg-primary/20 focus:text-primary transition-colors truncate"
                 >
                   {project.name}
                 </DropdownMenuItem>

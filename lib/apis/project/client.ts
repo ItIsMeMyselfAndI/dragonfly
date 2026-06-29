@@ -60,6 +60,18 @@ export async function getProjectNodes(
   return res.json();
 }
 
+export async function createProjectNode(
+  node: ProjectNodeModel,
+): Promise<ProjectNodeModel> {
+  const res = await fetch(`${API_BASE}/nodes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(node),
+  });
+  if (!res.ok) throw new Error("Failed to create project node");
+  return res.json();
+}
+
 export async function updateProjectNode(
   nodeId: string,
   updated: Partial<ProjectNodeModel>,

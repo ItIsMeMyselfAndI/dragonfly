@@ -39,28 +39,34 @@ export function FlowProvider({ children }: { children: ReactNode }) {
 
   const loadDynamicFlow = useCallback((flowData: any) => {
     const project = {
-      id: `proj-gen-${Date.now()}`,
+      id: `proj-gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: flowData.name,
       time: new Date().toISOString(),
-      tag: flowData.tag,
+      tag: flowData.tag || "N/A",
     };
 
     setProjects((prev) => [...prev, project]);
     setCurrentProject(project);
 
-    // Nodes and edges would typically be loaded from a database via projectId.
-    // For dynamic generation, we'll store them in the state for the current view.
     setCurrentNodes(
       flowData.nodes.map((n: any, i: number) => ({
-        ...n,
+        id: `node-gen-${Date.now()}-${i}`,
         projectId: project.id,
-        componentId: `comp-${i}`,
+        componentId: `comp-gen-${i}`,
+        positionX: n.positionX,
+        positionY: n.positionY,
       }))
     );
     setCurrentEdges(
-      flowData.edges.map((e: any) => ({
-        ...e,
+      flowData.edges.map((e: any, i: number) => ({
+        id: `edge-gen-${Date.now()}-${i}`,
         projectId: project.id,
+        sourceId: e.sourceId,
+        targetId: e.targetId,
+        label: e.label,
+        type: e.type,
+        sourceHandle: e.sourceHandle || "bottom",
+        targetHandle: e.targetHandle || "top",
       }))
     );
   }, []);
