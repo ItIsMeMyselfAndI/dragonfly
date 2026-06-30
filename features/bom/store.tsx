@@ -7,15 +7,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getAllProjects, getProjectComponents } from "@/lib/apis/project/client";
-import { ItemModel, StockStatus } from "@/lib/apis/inventory/types";
+import {
+  getAllProjects,
+  getProjectComponents,
+} from "@/lib/apis/project/client";
 import {
   ProjectCartSummary,
   ProjectTagEnum,
   ProjectComponentModel,
 } from "@/lib/apis/project/types";
 import { BomAlert } from "./data";
-import { getAllItems } from "@/lib/apis/inventory/client";
 
 interface BomStore {
   components: ProjectComponentModel[];
@@ -51,7 +52,9 @@ const Ctx = createContext<BomStore | null>(null);
 
 export function BomProvider({ children }: { children: ReactNode }) {
   const [components, setComponents] = useState<ProjectComponentModel[]>([]);
-  const [originalComponents, setOriginalComponents] = useState<ProjectComponentModel[]>([]);
+  const [originalComponents, setOriginalComponents] = useState<
+    ProjectComponentModel[]
+  >([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [alerts, setAlerts] = useState<BomAlert[]>([]);
   const [specs, setSpecs] = useState<any | null>(null);

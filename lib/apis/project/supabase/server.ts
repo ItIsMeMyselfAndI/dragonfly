@@ -315,6 +315,75 @@ export async function createSubstitute(
     substituteComponentId: data.substitute_component_id,
   };
 }
+
+// --- Specs Reports ---
+
+export async function getReportByProjectId(
+  projectId: string,
+): Promise<ProjectSpecsReportModel | undefined> {
+  const { data, error } = await supabase
+    .from("project_specs_reports")
+    .select("*")
+    .eq("project_id", projectId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") return undefined;
+    throw new Error(`Error fetching report: ${error.message}`);
+  }
+
+  return {
+    id: data.id,
+    projectId: data.project_id,
+    url: data.url,
+  };
+}
+
+export async function createReport(
+  report: ProjectSpecsReportModel,
+): Promise<ProjectSpecsReportModel> {
+  const { data, error } = await supabase
+    .from("project_specs_reports")
+    .insert([report])
+    .select()
+    .single();
+
+  if (error) throw new Error(`Error creating report: ${error.message}`);
+
+  return {
+    id: data.id,
+    projectId: data.project_id,
+    url: data.url,
+  };
+}
+
+export async function updateReport(
+  id: string,
+  updated: Partial<ProjectSpecsReportModel>,
+): Promise<ProjectSpecsReportModel | undefined> {
+  const { data, error } = await supabase
+    .from("project_specs_reports")
+    .update(updated)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Error updating report: ${error.message}`);
+
+  return {
+    id: data.id,
+    projectId: data.project_id,
+    url: data.url,
+  };
+}
+
+export async function deleteReport(id: string): Promise<boolean> {
+  const { error } = await supabase.from("project_specs_reports").delete().eq("id", id);
+
+  if (error) throw new Error(`Error deleting report: ${error.message}`);
+  return true;
+}
+
 // --- Components ---
 
 export async function getComponentsByProjectId(

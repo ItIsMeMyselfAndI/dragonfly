@@ -73,7 +73,8 @@ export default function FlowScreen() {
     Promise.all([getAllProjects(), getAllItems()])
       .then(([projs, inv]) => {
         setProjects((prev: ProjectModel[]) => {
-          const newProjects = [...projs, ...prev.filter((p: ProjectModel) => !projs.find((bp: ProjectModel) => bp.id === p.id))];
+          const existingIds = new Set(prev.map((p: ProjectModel) => p.id));
+          const newProjects = [...projs, ...prev.filter((p: ProjectModel) => !existingIds.has(p.id))];
           return newProjects;
         });
         setInventory(inv);

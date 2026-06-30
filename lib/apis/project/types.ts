@@ -83,6 +83,12 @@ export interface ProjectSubstituteModel {
   substituteComponentId: string;
 }
 
+export interface ProjectSpecsReportModel {
+  id: string;
+  projectId: string;
+  url: string;
+}
+
 export interface ProjectComponentModel extends Omit<ItemModel, "id"> {
   id: string;
   projectId: string;

@@ -133,6 +133,49 @@ export async function getProjectSubstitutes(
   return res.json();
 }
 
+export async function getProjectReport(
+  projectId: string,
+): Promise<ProjectSpecsReportModel | undefined> {
+  const res = await fetch(`${API_BASE}/${projectId}/report`);
+  if (!res.ok) {
+    if (res.status === 404) return undefined;
+    throw new Error("Failed to fetch project report");
+  }
+  return res.json();
+}
+
+export async function createProjectReport(
+  report: ProjectSpecsReportModel,
+): Promise<ProjectSpecsReportModel> {
+  const res = await fetch(`${API_BASE}/reports`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(report),
+  });
+  if (!res.ok) throw new Error("Failed to create project report");
+  return res.json();
+}
+
+export async function updateProjectReport(
+  id: string,
+  updated: Partial<ProjectSpecsReportModel>,
+): Promise<ProjectSpecsReportModel> {
+  const res = await fetch(`${API_BASE}/reports/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updated),
+  });
+  if (!res.ok) throw new Error("Failed to update project report");
+  return res.json();
+}
+
+export async function deleteProjectReport(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/reports/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete project report");
+}
+
 export async function getProjectComponents(
   projectId: string,
 ): Promise<ProjectComponentModel[]> {

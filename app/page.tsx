@@ -47,8 +47,9 @@ const categoryIcons: Record<string, typeof Bot> = {
 
 const suggestions = [
   "5V line-following robot with a higher voltage buzzer",
-  "ESP32 weather station, OLED + BME280",
+  // "ESP32 weather station, OLED + BME280",
   "Bluetooth audio amp, 2x3W class-D",
+  "LED + Resistor + 9V battery",
 ];
 
 export default function Home() {

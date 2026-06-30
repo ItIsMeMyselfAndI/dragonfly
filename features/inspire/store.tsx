@@ -18,6 +18,7 @@ import {
   createProjectNode,
 } from "@/lib/apis/project/client";
 import { createItem } from "@/lib/apis/inventory/client";
+import { uploadToStorage } from "@/lib/apis/storage/client";
 
 interface SelectedFile {
   file: File;
@@ -150,16 +151,16 @@ export function InspireProvider({ children }: { children: ReactNode }) {
             bomResult.items.map(async (item: any, idx: number) => {
               // Map AI category to valid ItemCategory enum
               const categoryMap: Record<string, any> = {
-                "MCU": "MCU",
-                "Sensor": "Sensor",
-                "Actuator": "Actuator",
-                "Logic": "Logic",
-                "Power": "Power",
-                "Passive": "Passive",
-                "IoT": "MCU",
-                "Robotics": "Actuator",
-                "Networking": "Logic",
-                "Mechatronics": "Actuator",
+                MCU: "MCU",
+                Sensor: "Sensor",
+                Actuator: "Actuator",
+                Logic: "Logic",
+                Power: "Power",
+                Passive: "Passive",
+                IoT: "MCU",
+                Robotics: "Actuator",
+                Networking: "Logic",
+                Mechatronics: "Actuator",
               };
               const validCategory = categoryMap[item.category] || "Logic";
 
@@ -170,7 +171,7 @@ export function InspireProvider({ children }: { children: ReactNode }) {
                 partNumber: item.partNumber,
                 category: validCategory,
                 specs: item.specs,
-                manufacturer: item.manufacturer,
+                details: item.details,
                 unitPrice: item.unitPrice,
                 stock: item.stock,
                 qty: 0,
@@ -197,7 +198,7 @@ export function InspireProvider({ children }: { children: ReactNode }) {
               if (item.name) {
                 componentIdMap[item.name] = projectComp.id;
               }
-            })
+            }),
           );
 
           // 3. Save Visual Flow Nodes
@@ -206,9 +207,11 @@ export function InspireProvider({ children }: { children: ReactNode }) {
               flowResult.nodes.map(async (node: any) => {
                 // The node.id in flowResult is the component name (per server instruction)
                 const compId = componentIdMap[node.id];
-                
+
                 if (!compId) {
-                  console.warn(`Could not find ProjectComponent ID for node: ${node.id}`);
+                  console.warn(
+                    `Could not find ProjectComponent ID for node: ${node.id}`,
+                  );
                   return; // Skip nodes that don't have a corresponding component
                 }
 
@@ -237,6 +240,17 @@ export function InspireProvider({ children }: { children: ReactNode }) {
                 }),
               ),
             );
+          }
+
+          // 5. Upload Specs PDF to Storage
+          try {
+            const pdfFile = new File([pdfBytes], `${projectName}-specs.pdf`, {
+              type: "application/pdf",
+            });
+            const storagePath = `specs/${project.id}/${pdfFile.name}`;
+            await uploadToStorage(pdfFile, storagePath);
+          } catch (pdfError) {
+            console.error("PDF upload failed:", pdfError);
           }
         } catch (syncError) {
           console.error("Background sync to DB failed:", syncError);
