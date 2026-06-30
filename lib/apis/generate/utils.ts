@@ -1,7 +1,10 @@
+export const DEFAULT_MAX_RETRIES = 5;
+export const DEFAULT_DELAY_MS = 2000;
+
 export async function withRetry<T>(
   fn: () => Promise<T>,
-  retries = 3,
-  delayMs = 2000
+  retries = DEFAULT_MAX_RETRIES,
+  delayMs = DEFAULT_DELAY_MS,
 ): Promise<T> {
   for (let i = 0; i < retries; i++) {
     try {

@@ -1,12 +1,12 @@
 import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { getNextApiKey } from "./keyCycler";
 
 export async function generateVisualFlowLogic(
   specsContext: string,
   prompt: string | null,
   image: File | null,
 ) {
+  const ai = new GoogleGenAI({ apiKey: getNextApiKey() });
   const contents = [];
   if (image) {
     const buffer = Buffer.from(await image.arrayBuffer());
