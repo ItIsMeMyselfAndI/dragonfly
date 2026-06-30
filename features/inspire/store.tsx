@@ -7,9 +7,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { generateBOM } from "@/lib/apis/generate/client";
 import { generateSpecs } from "@/lib/apis/generate/specsClient";
+import { generateBOM } from "@/lib/apis/generate/bomClient";
 import { generateVisualFlow } from "@/lib/apis/generate/visualFlowClient";
+import { withRetry } from "@/lib/apis/generate/utils";
 import { downloadReport } from "@/lib/apis/pdf/client";
 import {
   createProject,
@@ -90,40 +91,41 @@ export function InspireProvider({ children }: { children: ReactNode }) {
           ? prompt.replace(/[^\x00-\x7F]/g, "")
           : null;
 
+        // 1. Specs
         setLoadingTextState("Calculating specs...");
-        const specsData = await generateSpecs(sanitizedPrompt, imageFile);
+        const specsData = await withRetry(async () => {
+          return await generateSpecs(sanitizedPrompt, imageFile);
+        });
         const specsContext = JSON.stringify(specsData);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
+        // 2. BOM
+        setLoadingTextState("Generating BOM...");
+        const bomResult = await withRetry(async () => {
+          return await generateBOM(specsContext, imageFile);
+        });
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // 3. Flow
+        setLoadingTextState("Generating visual flow...");
+        const flowResult = await withRetry(async () => {
+          return await generateVisualFlow(specsContext, sanitizedPrompt, imageFile);
+        });
+
+        const projectName = flowResult.name || "Generated Project";
+
+        setLoadingTextState("Generating report...");
         const pdfBytes = (await downloadReport(
           {
-            projectName: sanitizedPrompt || "Extracted Schematic",
+            projectName,
             items: specsData.specs,
           },
           true,
         )) as ArrayBuffer;
 
-        setLoadingTextState("Generating visual flow...");
-        const flowResult = await generateVisualFlow(
-          specsContext,
-          sanitizedPrompt,
-          imageFile,
-        );
         if (flowResult) {
           loadDynamicFlow(flowResult);
         }
-
-        // 1 second delay for visual polish
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        setLoadingTextState("Generating BOM...");
-        const combinedPrompt = sanitizedPrompt
-          ? `${sanitizedPrompt}\n\nRELEVANT SPECS ANALYSIS:\n${specsContext}`
-          : `Generate a BOM based on the following specs analysis:\n${specsContext}`;
-        const bomResult = await generateBOM(combinedPrompt, imageFile);
-
-        const projectName = sanitizedPrompt
-          ? sanitizedPrompt
-          : "Extracted Schematic";
 
         loadDynamicProject(
           projectName,
