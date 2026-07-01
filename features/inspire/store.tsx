@@ -12,6 +12,8 @@ import { generateBOM } from "@/lib/apis/generate/bomClient";
 import { generateVisualFlow } from "@/lib/apis/generate/visualFlowClient";
 import { withRetry } from "@/lib/apis/generate/utils";
 import { downloadReport } from "@/lib/apis/pdf/client";
+import { uploadToStorage } from "@/lib/apis/storage/client";
+import { createReport } from "@/lib/apis/project/reportClient";
 import {
   createProject,
   createProjectComponent,
@@ -109,7 +111,11 @@ export function InspireProvider({ children }: { children: ReactNode }) {
         // 3. Flow
         setLoadingTextState("Generating visual flow...");
         const flowResult = await withRetry(async () => {
-          return await generateVisualFlow(specsContext, sanitizedPrompt, imageFile);
+          return await generateVisualFlow(
+            specsContext,
+            sanitizedPrompt,
+            imageFile,
+          );
         });
 
         const projectName = flowResult.name || "Generated Project";
@@ -123,28 +129,48 @@ export function InspireProvider({ children }: { children: ReactNode }) {
           true,
         )) as ArrayBuffer;
 
-        if (flowResult) {
-          loadDynamicFlow(flowResult);
-        }
-
-        loadDynamicProject(
-          projectName,
-          bomResult.tag || "N/A",
-          bomResult.items,
-          bomResult.alerts,
-          specsData,
-          new Blob([pdfBytes], { type: "application/pdf" }),
-        );
-
         // --- SYNC TO DB START ---
         try {
           // 1. Create the Project
+          const projectId = `proj-gen-${Date.now()}`;
           const project = await createProject({
-            id: `proj-gen-${Date.now()}`,
+            id: projectId,
             name: projectName,
             time: new Date().toISOString(),
             tag: bomResult.tag || "N/A",
           });
+
+          // Upload PDF and Create Report
+          const pdfFile = new File(
+            [new Blob([pdfBytes])],
+            `${projectName}.pdf`,
+            { type: "application/pdf" },
+          );
+          const uploadResult = await uploadToStorage(
+            pdfFile,
+            `reports/${projectName}-${Date.now()}.pdf`,
+          );
+          const pdfUrl = uploadResult.url;
+
+          await createReport({
+            project_id: projectId,
+            report_name: `${projectName} Report`,
+            report_data: specsData,
+            pdf_url: pdfUrl,
+          });
+
+          if (flowResult) {
+            loadDynamicFlow(flowResult);
+          }
+
+          loadDynamicProject(
+            projectName,
+            bomResult.tag || "N/A",
+            bomResult.items,
+            bomResult.alerts,
+            specsData,
+            new Blob([pdfBytes], { type: "application/pdf" }),
+          );
 
           // 2. Save Inventory Items & Link to Project Components
           const componentIdMap: Record<string, string> = {};
@@ -152,16 +178,16 @@ export function InspireProvider({ children }: { children: ReactNode }) {
             bomResult.items.map(async (item: any, idx: number) => {
               // Map AI category to valid ItemCategory enum
               const categoryMap: Record<string, any> = {
-                "MCU": "MCU",
-                "Sensor": "Sensor",
-                "Actuator": "Actuator",
-                "Logic": "Logic",
-                "Power": "Power",
-                "Passive": "Passive",
-                "IoT": "MCU",
-                "Robotics": "Actuator",
-                "Networking": "Logic",
-                "Mechatronics": "Actuator",
+                MCU: "MCU",
+                Sensor: "Sensor",
+                Actuator: "Actuator",
+                Logic: "Logic",
+                Power: "Power",
+                Passive: "Passive",
+                IoT: "MCU",
+                Robotics: "Actuator",
+                Networking: "Logic",
+                Mechatronics: "Actuator",
               };
               const validCategory = categoryMap[item.category] || "Logic";
 
@@ -172,7 +198,7 @@ export function InspireProvider({ children }: { children: ReactNode }) {
                 partNumber: item.partNumber,
                 category: validCategory,
                 specs: item.specs,
-                manufacturer: item.manufacturer,
+                details: item.details,
                 unitPrice: item.unitPrice,
                 stock: item.stock,
                 qty: 0,
@@ -199,7 +225,7 @@ export function InspireProvider({ children }: { children: ReactNode }) {
               if (item.name) {
                 componentIdMap[item.name] = projectComp.id;
               }
-            })
+            }),
           );
 
           // 3. Save Visual Flow Nodes
@@ -208,9 +234,11 @@ export function InspireProvider({ children }: { children: ReactNode }) {
               flowResult.nodes.map(async (node: any) => {
                 // The node.id in flowResult is the component name (per server instruction)
                 const compId = componentIdMap[node.id];
-                
+
                 if (!compId) {
-                  console.warn(`Could not find ProjectComponent ID for node: ${node.id}`);
+                  console.warn(
+                    `Could not find ProjectComponent ID for node: ${node.id}`,
+                  );
                   return; // Skip nodes that don't have a corresponding component
                 }
 

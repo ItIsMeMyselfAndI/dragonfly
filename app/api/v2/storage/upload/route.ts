@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadFile } from "@/lib/apis/storage/server";
+import { uploadFile, getFileUrl } from "@/lib/apis/storage/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,8 +15,9 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
     
     await uploadFile(path, buffer, file.type);
+    const url = await getFileUrl(path);
     
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, url });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }

@@ -1,6 +1,8 @@
 "use client";
 import {
   createContext,
+  Dispatch,
+  SetStateAction,
   useCallback,
   useContext,
   useMemo,
@@ -24,14 +26,16 @@ interface FlowStore {
   inventory: ItemModel[];
   setInventory: (inventory: ItemModel[]) => void;
   projects: ProjectModel[];
-  setProjects: (projects: ProjectModel[]) => void;
+  setProjects: Dispatch<SetStateAction<ProjectModel[]>>;
   loadDynamicFlow: (flowData: any) => void;
 }
 
 const Ctx = createContext<FlowStore | null>(null);
 
 export function FlowProvider({ children }: { children: ReactNode }) {
-  const [currentProject, setCurrentProject] = useState<ProjectModel | null>(null);
+  const [currentProject, setCurrentProject] = useState<ProjectModel | null>(
+    null,
+  );
   const [currentNodes, setCurrentNodes] = useState<ProjectNodeModel[]>([]);
   const [currentEdges, setCurrentEdges] = useState<ProjectEdgeModel[]>([]);
   const [inventory, setInventory] = useState<ItemModel[]>([]);
@@ -55,7 +59,7 @@ export function FlowProvider({ children }: { children: ReactNode }) {
         componentId: `comp-gen-${i}`,
         positionX: n.positionX,
         positionY: n.positionY,
-      }))
+      })),
     );
     setCurrentEdges(
       flowData.edges.map((e: any, i: number) => ({
@@ -67,23 +71,33 @@ export function FlowProvider({ children }: { children: ReactNode }) {
         type: e.type,
         sourceHandle: e.sourceHandle || "bottom",
         targetHandle: e.targetHandle || "top",
-      }))
+      })),
     );
   }, []);
 
-  const value = useMemo<FlowStore>(() => ({
-    currentProject,
-    setCurrentProject,
-    currentNodes,
-    setCurrentNodes,
-    currentEdges,
-    setCurrentEdges,
-    inventory,
-    setInventory,
-    projects,
-    setProjects,
-    loadDynamicFlow,
-  }), [currentProject, currentNodes, currentEdges, inventory, projects, loadDynamicFlow]);
+  const value = useMemo<FlowStore>(
+    () => ({
+      currentProject,
+      setCurrentProject,
+      currentNodes,
+      setCurrentNodes,
+      currentEdges,
+      setCurrentEdges,
+      inventory,
+      setInventory,
+      projects,
+      setProjects,
+      loadDynamicFlow,
+    }),
+    [
+      currentProject,
+      currentNodes,
+      currentEdges,
+      inventory,
+      projects,
+      loadDynamicFlow,
+    ],
+  );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -7,15 +7,17 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getAllProjects, getProjectComponents } from "@/lib/apis/project/client";
-import { ItemModel, StockStatus } from "@/lib/apis/inventory/types";
 import {
   ProjectCartSummary,
   ProjectTagEnum,
   ProjectComponentModel,
 } from "@/lib/apis/project/types";
 import { BomAlert } from "./data";
-import { getAllItems } from "@/lib/apis/inventory/client";
+import {
+  getAllProjects,
+  getProjectComponents,
+} from "@/lib/apis/project/client";
+import { getReportsByProjectId } from "@/lib/apis/project/reportClient";
 
 interface BomStore {
   components: ProjectComponentModel[];
@@ -51,7 +53,9 @@ const Ctx = createContext<BomStore | null>(null);
 
 export function BomProvider({ children }: { children: ReactNode }) {
   const [components, setComponents] = useState<ProjectComponentModel[]>([]);
-  const [originalComponents, setOriginalComponents] = useState<ProjectComponentModel[]>([]);
+  const [originalComponents, setOriginalComponents] = useState<
+    ProjectComponentModel[]
+  >([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [alerts, setAlerts] = useState<BomAlert[]>([]);
   const [specs, setSpecs] = useState<any | null>(null);
@@ -70,13 +74,22 @@ export function BomProvider({ children }: { children: ReactNode }) {
     setProjectInfo({ name: project.name, tag: project.tag });
 
     const components = await getProjectComponents(project.id);
+    const reports = await getReportsByProjectId(project.id);
+    const latestReport = reports.length > 0 ? reports[0] : null;
 
     setComponents(components);
     setOriginalComponents(components);
     setHasUnsavedChanges(false);
     setAlerts([]); // Clear dynamic alerts when loading from API
-    setSpecs(null);
-    setPdfReport(null); // Added
+    setSpecs(latestReport?.report_data || null);
+
+    if (latestReport?.pdf_url) {
+      const response = await fetch(latestReport.pdf_url);
+      const blob = await response.blob();
+      setPdfReport(blob);
+    } else {
+      setPdfReport(null);
+    }
   };
 
   const loadDynamicProject = (
