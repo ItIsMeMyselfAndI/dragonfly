@@ -9,7 +9,10 @@ export async function POST(req: NextRequest) {
     const image = formData.get("image") as File | null;
 
     if (!specsContext) {
-      return NextResponse.json({ error: "Missing specsContext" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing specsContext" },
+        { status: 400 },
+      );
     }
 
     const result = await generateVisualFlowLogic(specsContext, prompt, image);

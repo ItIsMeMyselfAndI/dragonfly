@@ -4,14 +4,22 @@ import { resolveComponentPricing } from "@/lib/pricing";
 import { ItemModel, StockStatus } from "@/lib/apis/inventory/types";
 import { type BomAlert } from "@/features/bom/data";
 import { ProjectTagEnum } from "@/lib/apis/project/types";
+import { createItem } from "@/lib/apis/inventory/client";
+import { getNextApiKey } from "./keyCycler";
 
-// Initialize Gen AI SDK
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Helper for deterministic IDs
+function slugify(text: string) {
+  return text.toString().toLowerCase().trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-');
+}
 
 export async function generateBomLogic(
   prompt: string | null,
   image: File | null,
 ) {
+  const ai = new GoogleGenAI({ apiKey: getNextApiKey() });
   // 1. Prepare inputs for Gemini
   const contents = [];
   if (image) {
@@ -29,7 +37,6 @@ export async function generateBomLogic(
 
   // 2. Call Gemini for Nodal Computation & Extraction
   const response = await ai.models.generateContent({
-    // model: "gemini-2.5-flash",
     model: "gemini-2.5-flash-lite",
     contents: contents,
     config: {
@@ -54,7 +61,7 @@ CRITICAL INSTRUCTIONS:
   };
   const extractedItems = extraction.items || [];
 
-  // 3. Pricing Engine Logic
+  // 3. Pricing Engine & Inventory Creation Logic
   const itemsWithPricing = await Promise.all(
     extractedItems.map(async (item: ItemModel, index: number) => {
       // Run real web search / scraping
@@ -67,14 +74,29 @@ CRITICAL INSTRUCTIONS:
       const cheapestOption =
         storeOptions.find((s) => s.isCheapest) || storeOptions[0];
 
-      return {
+      const itemData = {
         ...item,
-        id: `c-gen-${Date.now()}-${index}`,
+        // Deterministic ID for consistency: component name slugified
+        id: `c-gen-${slugify(item.name)}`,
         storeOptions,
         // Hydrate the default frontend expectations based on cheapest option
         unitPrice: cheapestOption ? cheapestOption.price : 0,
         stock: cheapestOption?.inStock ? StockStatus.IN_STOCK : StockStatus.OUT,
       };
+
+      // Simulate inventory creation
+      try {
+        await createItem({
+            ...itemData,
+            qty: 0,
+            stockCount: cheapestOption?.inStock ? 100 : 0,
+            pins: [],
+        });
+      } catch (err) {
+        console.warn(`Could not sync item to inventory: ${item.name}`, err);
+      }
+
+      return itemData;
     }),
   );
 

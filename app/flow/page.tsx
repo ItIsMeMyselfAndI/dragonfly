@@ -47,6 +47,7 @@ import {
 } from "@/features/visual-flow/CustomNode";
 import { toast } from "sonner";
 import { useFlow } from "@/features/visual-flow/store";
+import { ProjectModel } from "@/lib/apis/project/types";
 
 const nodeTypes = { custom: CustomNode };
 
@@ -73,8 +74,13 @@ export default function FlowScreen() {
     Promise.all([getAllProjects(), getAllItems()])
       .then(([projs, inv]) => {
         setProjects((prev: ProjectModel[]) => {
-          const existingIds = new Set(prev.map((p: ProjectModel) => p.id));
-          const newProjects = [...projs, ...prev.filter((p: ProjectModel) => !existingIds.has(p.id))];
+          const newProjects: ProjectModel[] = [
+            ...projs,
+            ...prev.filter(
+              (p: ProjectModel) =>
+                !projs.find((bp: ProjectModel) => bp.id === p.id),
+            ),
+          ];
           return newProjects;
         });
         setInventory(inv);
@@ -382,7 +388,8 @@ export default function FlowScreen() {
                 variant="outline"
                 className="flex items-center gap-2 rounded-full max-w-[200px]"
               >
-                <span className="truncate">{currentProject.name}</span> <ChevronDown size={16} />
+                <span className="truncate">{currentProject.name}</span>{" "}
+                <ChevronDown size={16} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="max-w-[250px]">

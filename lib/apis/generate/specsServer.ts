@@ -1,12 +1,12 @@
 import { GoogleGenAI } from "@google/genai";
 import { SpecsExtractionSchema } from "./specsSchema";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { getNextApiKey } from "./keyCycler";
 
 export async function generateSpecsLogic(
   prompt: string | null,
   image: File | null,
 ) {
+  const ai = new GoogleGenAI({ apiKey: getNextApiKey() });
   const contents = [];
   if (image) {
     const buffer = Buffer.from(await image.arrayBuffer());

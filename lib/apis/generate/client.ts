@@ -1,6 +1,6 @@
-const API_BASE = "/api/v1/generate";
+const API_BASE = "/api/v2/generate/full-pipeline";
 
-export async function generateBOM(prompt: string | null, image: File | null) {
+export async function runPipeline(prompt: string | null, image: File | null) {
   const formData = new FormData();
   if (prompt) formData.append("prompt", prompt);
   if (image) formData.append("image", image);
@@ -12,8 +12,8 @@ export async function generateBOM(prompt: string | null, image: File | null) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const message = errorData.error || "Failed to generate BOM";
+    const message = errorData.error || "Failed to generate project pipeline";
     throw new Error(message);
   }
-  return await response.json();
+  return response.json();
 }
