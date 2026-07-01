@@ -12,7 +12,6 @@ import { generateBOM } from "@/lib/apis/generate/bomClient";
 import { generateVisualFlow } from "@/lib/apis/generate/visualFlowClient";
 import { withRetry } from "@/lib/apis/generate/utils";
 import { downloadReport } from "@/lib/apis/pdf/client";
-import { uploadToStorage } from "@/lib/apis/storage/client";
 import { createReport } from "@/lib/apis/project/reportClient";
 import {
   createProject,
