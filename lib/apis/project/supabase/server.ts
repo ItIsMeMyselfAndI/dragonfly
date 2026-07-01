@@ -5,6 +5,7 @@ import {
   ProjectEdgeModel,
   ProjectSubstituteModel,
   ProjectComponentModel,
+  ProjectSpecsReportModel,
 } from "../types";
 
 export async function getAllProjects(): Promise<ProjectModel[]> {
@@ -378,7 +379,10 @@ export async function updateReport(
 }
 
 export async function deleteReport(id: string): Promise<boolean> {
-  const { error } = await supabase.from("project_specs_reports").delete().eq("id", id);
+  const { error } = await supabase
+    .from("project_specs_reports")
+    .delete()
+    .eq("id", id);
 
   if (error) throw new Error(`Error deleting report: ${error.message}`);
   return true;
@@ -476,7 +480,7 @@ export async function updateComponent(
     .single();
 
   if (error) throw new Error(`Error updating component: ${error.message}`);
-  
+
   // Fetch updated data to include dynamic stock info from JOIN
   const components = await getComponentsByProjectId(data.project_id);
   return components.find((c) => c.id === id);
