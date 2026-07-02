@@ -38,10 +38,11 @@ export async function runPipeline(
   // Wait 2s between steps
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
-  // 3. Flow (using Specs as context)
+  // 3. Flow (using BOM as context)
+  const bomContext = JSON.stringify(bom);
   const flow = await withRetry(async () => {
     return (await generateVisualFlowLogic(
-      specsContext,
+      bomContext,
       prompt,
       image,
     )) as GeneratedFlow;

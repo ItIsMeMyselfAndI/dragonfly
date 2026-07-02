@@ -145,7 +145,7 @@ export function InspireProvider({ children }: { children: ReactNode }) {
         setLoadingTextState("Generating visual flow...");
         const flowResult = await withRetry(async () => {
           return await generateVisualFlow(
-            specsContext,
+            JSON.stringify(bomResult),
             sanitizedPrompt,
             imageFile,
           );
