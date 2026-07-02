@@ -10,6 +10,13 @@ export interface PipelineResult {
   flow: GeneratedFlow;
 }
 
+const STEP_DELAY_MS = 5000;
+const STEP_JITTER_MS = 2000;
+
+function getSteppedDelay(): number {
+  return STEP_DELAY_MS + Math.random() * STEP_JITTER_MS;
+}
+
 export async function runPipeline(
   prompt: string | null,
   image: File | null,
@@ -21,8 +28,8 @@ export async function runPipeline(
   });
   console.log("Pipeline Step 1 (Specs) Output:", specs);
 
-  // Wait 2s between steps
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  // Wait between steps with jitter
+  await new Promise((resolve) => setTimeout(resolve, getSteppedDelay()));
 
   // 2. BOM (using Specs as context)
   const specsContext = JSON.stringify(specs);
@@ -35,8 +42,8 @@ export async function runPipeline(
   });
   console.log("Pipeline Step 2 (BOM) Output:", bom);
 
-  // Wait 2s between steps
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  // Wait between steps with jitter
+  await new Promise((resolve) => setTimeout(resolve, getSteppedDelay()));
 
   // 3. Flow (using BOM as context)
   const bomContext = JSON.stringify(bom);

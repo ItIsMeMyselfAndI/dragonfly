@@ -11,6 +11,7 @@ import { ProjectTagEnum } from "@/lib/apis/project/types";
 import { GeneratedBOM, GeneratedBOMItem } from "./types";
 import { createItem } from "@/lib/apis/inventory/client";
 import { getNextApiKey } from "./keyCycler";
+import { runWithModelFallback } from "./utils";
 
 // Helper for deterministic IDs
 function slugify(text: string) {
@@ -57,10 +58,10 @@ export async function generateBomLogic(
   }
 
   // 2. Call Gemini for Nodal Computation & Extraction
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-lite",
-    contents: contents,
-    config: {
+  const extraction = await runWithModelFallback(
+    ai,
+    contents,
+    {
       systemInstruction: `You are an expert Electronics Engineer and System Architect. Your task is to generate a professional Bill of Materials (BOM) based on a provided technical specifications analysis and an optional schematic image.
 
 CRITICAL INSTRUCTIONS:
@@ -72,14 +73,13 @@ CRITICAL INSTRUCTIONS:
       responseMimeType: "application/json",
       responseSchema: BomExtractionSchema,
     },
-  });
+    (text) => JSON.parse(text || "{}") as {
+      items: ItemModel[];
+      alerts: BomAlert[];
+      tag: ProjectTagEnum;
+    },
+  );
 
-  // Parse the structured JSON response
-  const extraction = JSON.parse(response.text || "{}") as {
-    items: ItemModel[];
-    alerts: BomAlert[];
-    tag: ProjectTagEnum;
-  };
   const extractedItems = extraction.items || [];
 
   // 3. Pricing Engine & Inventory Creation Logic
@@ -150,6 +150,6 @@ CRITICAL INSTRUCTIONS:
   return {
     items: itemsWithPricing,
     alerts: extraction.alerts || [],
-    tag: extraction.tag || "N/A",
+    tag: extraction.tag || ProjectTagEnum.NA,
   };
 }

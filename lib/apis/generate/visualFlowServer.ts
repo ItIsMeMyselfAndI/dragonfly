@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { getNextApiKey } from "./keyCycler";
+import { runWithModelFallback } from "./utils";
 
 export async function generateVisualFlowLogic(
   bomContext: string,
@@ -7,6 +8,7 @@ export async function generateVisualFlowLogic(
   image: File | null,
 ) {
   const ai = new GoogleGenAI({ apiKey: getNextApiKey() });
+  
   const contents = [];
   if (image) {
     const buffer = Buffer.from(await image.arrayBuffer());
@@ -27,10 +29,10 @@ export async function generateVisualFlowLogic(
     ${bomContext}`,
   });
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-lite",
-    contents: contents,
-    config: {
+  return runWithModelFallback(
+    ai,
+    contents,
+    {
       systemInstruction: `You are an expert System Architect and Electronics Engineer. Your task is to generate a visual dependency and signal flow mapping for an electronic circuit based on the provided Bill of Materials.
 
 CRITICAL INSTRUCTIONS:
@@ -53,7 +55,6 @@ Return JSON with the following structure:
 }`,
       responseMimeType: "application/json",
     },
-  });
-
-  return JSON.parse(response.text || "{}");
+    JSON.parse,
+  );
 }
