@@ -17,10 +17,10 @@ export async function POST(req: Request) {
 
     const result = await generateBomLogic(specsContext, image, projectId);
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (error: any) {
     console.error("BOM Gen Error:", error);
     return NextResponse.json(
-      { error: "Failed to generate BOM" },
+      { error: error.message || "Failed to generate BOM" },
       { status: 500 },
     );
   }

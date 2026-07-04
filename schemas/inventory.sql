@@ -32,19 +32,19 @@ CREATE INDEX idx_inventory_category ON inventory (category);
 
 -- 4. Row Level Security (RLS)
 -- Enable RLS for the table
-ALTER TABLE inventory ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE inventory ENABLE ROW LEVEL SECURITY;
 
 -- Create a policy that allows anyone to read the inventory (Public Read)
-CREATE POLICY "Allow public read access" 
-ON inventory FOR SELECT 
-USING (true);
+-- CREATE POLICY "Allow public read access" 
+-- ON inventory FOR SELECT 
+-- USING (true);
 
 -- Create a policy that allows authenticated users to manage the inventory
-CREATE POLICY "Allow authenticated users to manage inventory" 
-ON inventory FOR ALL 
-TO authenticated 
-USING (true) 
-WITH CHECK (true);
+-- CREATE POLICY "Allow authenticated users to manage inventory" 
+-- ON inventory FOR ALL 
+-- TO authenticated 
+-- USING (true) 
+-- WITH CHECK (true);
 
 -- 5. Trigger to automatically update 'updated_at' timestamp
 CREATE OR REPLACE FUNCTION update_modified_column()

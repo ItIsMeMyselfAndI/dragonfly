@@ -8,14 +8,17 @@ export interface StoreOption {
   isCheapest: boolean;
 }
 
+import { ItemDetails } from "@/lib/apis/inventory/types";
+
 export interface Substitute {
   id: string;
   name: string;
   partNumber: string;
-  specs: string;
+  shortDesc: string;
   unitPrice: number;
   matchScore: number;
   note: string;
+  details?: ItemDetails;
 }
 
 export interface BomAlert {
@@ -37,7 +40,7 @@ export const substitutesFor: Record<string, Substitute[]> = {
       id: "s1",
       name: "Quad NAND Gate (SMD)",
       partNumber: "SN74HC00DR",
-      specs: "2-V to 6-V · SOIC-14",
+      shortDesc: "2-V to 6-V · SOIC-14",
       unitPrice: 24.36,
       matchScore: 98,
       note: "Identical electricals, SMD footprint. 8.4k in stock.",
@@ -46,7 +49,7 @@ export const substitutesFor: Record<string, Substitute[]> = {
       id: "s2",
       name: "Quad NAND Gate (CMOS)",
       partNumber: "CD4011BE",
-      specs: "3-V to 18-V · 14-DIP",
+      shortDesc: "3-V to 18-V · 14-DIP",
       unitPrice: 22.04,
       matchScore: 92,
       note: "Wider Vcc range, slower switching. 1.2k in stock.",

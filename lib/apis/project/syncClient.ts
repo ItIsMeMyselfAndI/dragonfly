@@ -5,6 +5,7 @@ import {
   createProjectNodesBatch,
 } from "./client";
 import { createItemsBatch } from "../inventory/client";
+import { createItemDetails, createItemDetailsBatch } from "../inventory/detailsClient";
 import { uploadToStorage } from "../storage/client";
 import { createReport } from "./reportClient";
 import { GeneratedSpecs, GeneratedFlow, GeneratedBOM } from "../generate/types";
@@ -15,7 +16,7 @@ import {
   ProjectNodeModel,
   ProjectEdgeModel,
 } from "./types";
-import { ItemCategory, ItemModel } from "../inventory/types";
+import { ItemModel } from "../inventory/types";
 
 export async function syncGeneratedData(
   projectName: string,
@@ -64,12 +65,25 @@ export async function syncGeneratedData(
   await createReport({
     project_id: projectId,
     report_name: `${projectName} Report`,
-    report_data: specsData,
+    report_data: specsData as any,
     pdf_url: pdfUrl,
   });
 
   // 4. Save Inventory Items & Link to Project Components
   await createItemsBatch(bomResult.items);
+  
+  // Sync details for all items, individually to pinpoint failures
+  const itemsWithDetails = bomResult.items.filter((item) => item.details);
+  if (itemsWithDetails.length > 0) {
+    for (const item of itemsWithDetails) {
+        try {
+            await createItemDetails(item.details);
+        } catch (error) {
+            console.error(`Failed to sync details for inventory ID ${item.details.inventoryId}:`, error);
+            // Optionally: throw new Error(`Foreign Key Violation: Inventory ID ${item.details.inventoryId} does not exist.`);
+        }
+    }
+  }
 
   const projectComponents = await createProjectComponentsBatch(
     projectId,

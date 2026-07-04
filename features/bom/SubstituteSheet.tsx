@@ -1,13 +1,20 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeftRight, Check, X } from "lucide-react";
+import { ArrowLeftRight, Check, X, Info } from "lucide-react";
 import { substitutesFor } from "./data";
 import { useBom } from "./store";
 import { useSheet } from "@/lib/sheet-context";
 import { useEffect, useMemo, useState } from "react";
 import { getAllItems } from "@/lib/apis/inventory/client";
 import { getAllProjects, getProjectSubstitutes } from "@/lib/apis/project/client";
-import { StockStatus } from "@/lib/apis/inventory/types";
+import { StockStatus, ItemDetails, MountType } from "@/lib/apis/inventory/types";
 import { ProjectComponentModel } from "@/lib/apis/project/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function SubstituteSheet({
   component,
@@ -19,8 +26,9 @@ export function SubstituteSheet({
   onClose: () => void;
 }) {
   const { swap } = useBom();
-  const [inventory, setInventory] = useState<any[]>([]); // Using any for inventory since it's an ItemModel, but I need to handle it properly
+  const [inventory, setInventory] = useState<any[]>([]);
   const [projectSubsData, setProjectSubsData] = useState<any[]>([]);
+  const [detailOpen, setDetailOpen] = useState<string | null>(null);
 
   useEffect(() => {
     const loadInventory = async () => {
@@ -69,7 +77,7 @@ export function SubstituteSheet({
         id: c.id,
         name: c.name,
         partNumber: c.partNumber,
-        specs: c.specs,
+        shortDesc: c.shortDesc,
         unitPrice: c.unitPrice,
         category: c.category,
         pins: c.pins,
@@ -102,10 +110,11 @@ export function SubstituteSheet({
         id: c.id,
         name: c.name,
         partNumber: c.partNumber,
-        specs: c.specs,
+        shortDesc: c.shortDesc,
         unitPrice: c.unitPrice,
         matchScore: 85, // Default score for inferred substitutes
         note: "Automatically found in-stock alternative.",
+        details: c.details,
       }));
   }, [component, projectSubs, explicitSubs, inventory]);
 
@@ -124,12 +133,13 @@ export function SubstituteSheet({
         inventoryId: subs[0].id,
         name: subs[0].name,
         partNumber: subs[0].partNumber,
-        specs: subs[0].specs,
+        shortDesc: subs[0].shortDesc,
         unitPrice: subs[0].unitPrice,
         stock: StockStatus.IN_STOCK,
         stockCount: 8400,
         category: component.category,
         pins: component.pins,
+        details: subs[0].details,
       });
       onClose();
     }
@@ -191,7 +201,7 @@ export function SubstituteSheet({
                   className="rounded-2xl border border-white/5 bg-surface/80 p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="truncate font-medium">{s.name}</p>
                         <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
@@ -202,16 +212,39 @@ export function SubstituteSheet({
                         {s.partNumber}
                       </p>
                       <p className="mt-2 text-xs text-foreground/80">
-                        {s.specs}
+                        {s.shortDesc}
                       </p>
                       <p className="mt-2 text-[11px] text-muted-foreground">
                         {s.note}
                       </p>
                     </div>
-                    <p className="shrink-0 font-mono text-sm text-foreground">
-                      ₱{s.unitPrice.toFixed(2)}
-                    </p>
+
+                    <div className="flex flex-col items-end gap-2">
+                      <p className="shrink-0 font-mono text-sm text-foreground">
+                        ₱{s.unitPrice.toFixed(2)}
+                      </p>
+                      {s.details && (
+                        <button
+                          onClick={() => setDetailOpen(s.id)}
+                          className="flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3 py-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+                        >
+                          <Info size={12} />
+                          VIEW SPECS
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  {s.details && (
+                    <Dialog open={detailOpen === s.id} onOpenChange={(open) => !open && setDetailOpen(null)}>
+                        <DialogContent className="max-h-[60vh] overflow-y-auto bg-surface border-white/10">
+                          <DialogHeader>
+                            <DialogTitle>{s.name}</DialogTitle>
+                            <DialogDescription>{s.partNumber}</DialogDescription>
+                          </DialogHeader>
+                          <SpecGrid d={s.details} category={component.category} />
+                        </DialogContent>
+                    </Dialog>
+                  )}
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={() => {
@@ -221,12 +254,13 @@ export function SubstituteSheet({
                         inventoryId: s.id,
                         name: s.name,
                         partNumber: s.partNumber,
-                        specs: s.specs,
+                        shortDesc: s.shortDesc,
                         unitPrice: s.unitPrice,
                         stock: StockStatus.IN_STOCK,
                         stockCount: 8400,
                         category: component.category,
                         pins: component.pins,
+                        details: s.details,
                       });
                       onClose();
                     }}
@@ -250,5 +284,113 @@ export function SubstituteSheet({
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+function Row({ label, value }: { label: string; value?: string | number }) {
+  if (value === undefined || value === null || value === "") return null;
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5">
+      <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </span>
+      <span className="truncate font-mono text-[11px] text-foreground/90">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function Group({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-white/5 bg-black/20 px-3 py-1.5">
+      <p className="mb-1 mt-1 text-[9px] font-semibold uppercase tracking-[0.22em] text-primary/80">
+        {title}
+      </p>
+      <div className="divide-y divide-white/[0.04]">{children}</div>
+    </div>
+  );
+}
+
+function SpecGrid({
+  d,
+  category,
+}: {
+  d: ItemDetails;
+  category: string;
+}) {
+  const v =
+    d.voltageMin !== undefined && d.voltageMax !== undefined
+      ? `${d.voltageMin}–${d.voltageMax} V`
+      : undefined;
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      <Group title="Universal">
+        <Row label="Mounting" value={d.mounting} />
+        <Row label="Package" value={d.package} />
+        <Row label="Vcc range" value={v} />
+      </Group>
+      {category === "Passive" && (
+        <Group title="Passive">
+          <Row label="Value" value={d.primaryValue} />
+          <Row label="Rating" value={d.powerRating} />
+          <Row label="Tolerance" value={d.tolerance} />
+        </Group>
+      )}
+      {(category === "MCU" ||
+        category === "Logic" ||
+        category === "Sensor") && (
+        <Group title="Integrated circuit">
+          <Row label="Logic family" value={d.logicFamily} />
+          <Row
+            label="I/O voltage"
+            value={d.ioVoltage !== undefined ? `${d.ioVoltage} V` : undefined}
+          />
+          <Row label="Pin count" value={d.pinCount} />
+          <Row label="Max current" value={d.maxCurrent} />
+        </Group>
+      )}
+      {category === "Actuator" && (
+        <Group title="Electromechanical">
+          <Row
+            label="Nominal V"
+            value={
+              d.nominalVoltage !== undefined
+                ? `${d.nominalVoltage} V`
+                : undefined
+            }
+          />
+          <Row label="Current draw" value={d.currentDraw} />
+          <Row label="Contact rating" value={d.contactRating} />
+        </Group>
+      )}
+      {category === "Power" && (
+        <Group title="Power">
+          <Row
+            label="Nominal V"
+            value={
+              d.nominalVoltage !== undefined
+                ? `${d.nominalVoltage} V`
+                : undefined
+            }
+          />
+          <Row label="Capacity" value={d.currentDraw} />
+          <Row label="Contact rating" value={d.contactRating} />
+        </Group>
+      )}
+      {(d.forwardVoltage || d.thresholdVoltage) && (
+        <Group title="Semiconductor">
+          <Row label="V forward" value={d.forwardVoltage} />
+          <Row label="V threshold" value={d.thresholdVoltage} />
+          <Row label="Max current" value={d.maxCurrent} />
+        </Group>
+      )}
+    </div>
   );
 }

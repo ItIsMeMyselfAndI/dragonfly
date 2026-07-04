@@ -129,7 +129,10 @@ export default function FlowScreen() {
           comp?.category?.toLowerCase() ||
           projComp?.category?.toLowerCase() ||
           "logic",
-        specs: comp?.specs || projComp?.specs || "No specifications available",
+        shortDesc:
+          comp?.shortDesc ||
+          projComp?.shortDesc ||
+          "No specifications available",
         position: { x: node.positionX, y: node.positionY },
       };
     });
@@ -480,7 +483,7 @@ export default function FlowScreen() {
               <ImageIcon size={48} opacity={0.4} />
             </div>
             <div className="text-xs text-foreground/80 leading-relaxed">
-              {selected?.specs}
+              {selected?.shortDesc}
             </div>
           </div>
         </DialogContent>

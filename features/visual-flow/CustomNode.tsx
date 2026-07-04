@@ -5,7 +5,7 @@ export interface ComponentNode {
   id: string;
   label: string;
   type: string;
-  specs: string;
+  shortDesc: string;
   position: { x: number; y: number };
 }
 
@@ -50,6 +50,8 @@ export const CustomNode = ({
       {data.component.type.toUpperCase()}
     </span>
     <p className="text-sm font-medium">{data.component.label}</p>
-    <p className="text-[10px] text-muted-foreground">{data.component.specs}</p>
+    <p className="text-[10px] text-muted-foreground">
+      {data.component.shortDesc}
+    </p>
   </button>
 );

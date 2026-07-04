@@ -9,18 +9,18 @@ CREATE TABLE IF NOT EXISTS public.project_specs_reports (
 );
 
 -- Enable Row Level Security
-ALTER TABLE public.project_specs_reports ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.project_specs_reports ENABLE ROW LEVEL SECURITY;
 
 -- Policies
-CREATE POLICY "Allow public read access to reports" 
-ON public.project_specs_reports FOR SELECT 
-USING (true);
-
-CREATE POLICY "Allow service role full access to reports" 
-ON public.project_specs_reports FOR ALL 
-TO service_role 
-USING (true) 
-WITH CHECK (true);
+-- CREATE POLICY "Allow public read access to reports" 
+-- ON public.project_specs_reports FOR SELECT 
+-- USING (true);
+--
+-- CREATE POLICY "Allow service role full access to reports" 
+-- ON public.project_specs_reports FOR ALL 
+-- TO service_role 
+-- USING (true) 
+-- WITH CHECK (true);
 
 -- Index for faster lookups by project
 CREATE INDEX idx_project_specs_reports_project_id ON public.project_specs_reports(project_id);

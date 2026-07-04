@@ -1,5 +1,5 @@
 import { ConnectionEnum, ProjectTagEnum } from "@/lib/apis/project/types";
-import { ItemCategory, StockStatus } from "@/lib/apis/inventory/types";
+import { ItemCategory, StockStatus, MountType } from "@/lib/apis/inventory/types";
 import {
   GeneratedBOM,
   GeneratedFlow,
@@ -36,7 +36,14 @@ export const getMockData = (projectId: string) => {
           stockCount: 5,
           category: ItemCategory.MCU,
           pins: [],
-          specs: "Test Specs",
+          shortDesc: "7.4V · 2600mAh · JST",
+          details: {
+            inventoryId: `item-1-${timestamp}`,
+            mounting: MountType.SMD,
+            package: "DIP-30",
+            voltageMin: 5,
+            voltageMax: 12,
+          },
         },
         {
           id: `item-2-${timestamp}`,
@@ -47,12 +54,20 @@ export const getMockData = (projectId: string) => {
           stockCount: 10,
           category: ItemCategory.Sensor,
           pins: [],
-          specs: "Test Specs",
+          shortDesc: "3.3V · I2C",
+          details: {
+            inventoryId: `item-2-${timestamp}`,
+            mounting: MountType.SMD,
+            package: "DIP-30",
+            voltageMin: 3.3,
+            voltageMax: 5,
+          },
         },
       ],
       components: [
         {
           id: `comp-1-${projectId}`,
+          projectId: projectId,
           name: "MCU",
           inventoryId: `item-1-${timestamp}`,
           partNumber: "123",
@@ -62,10 +77,18 @@ export const getMockData = (projectId: string) => {
           stockCount: 5,
           category: ItemCategory.MCU,
           pins: [],
-          specs: "Test Specs",
+          shortDesc: "7.4V · 2600mAh · JST",
+          details: {
+            inventoryId: `item-1-${timestamp}`,
+            mounting: MountType.SMD,
+            package: "DIP-30",
+            voltageMin: 5,
+            voltageMax: 12,
+          },
         },
         {
           id: `comp-2-${projectId}`,
+          projectId: projectId,
           name: "Sensor",
           inventoryId: `item-2-${timestamp}`,
           partNumber: "456",
@@ -75,7 +98,14 @@ export const getMockData = (projectId: string) => {
           stockCount: 10,
           category: ItemCategory.Sensor,
           pins: [],
-          specs: "Test Specs",
+          shortDesc: "3.3V · I2C",
+          details: {
+            inventoryId: `item-2-${timestamp}`,
+            mounting: MountType.SMD,
+            package: "DIP-30",
+            voltageMin: 3.3,
+            voltageMax: 5,
+          },
         },
       ],
       alerts: [],

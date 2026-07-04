@@ -61,7 +61,7 @@ export function ComponentCard({
           <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
             {c.partNumber} · {c.category}
           </p>
-          <p className="mt-2 text-xs text-foreground/80">{c.specs}</p>
+          <p className="mt-2 text-xs text-foreground/80">{c.shortDesc}</p>
         </div>
 
         <div className="flex flex-col items-end gap-2">
@@ -69,40 +69,36 @@ export function ComponentCard({
             ₱{c.unitPrice.toFixed(2)}
           </p>
 
-          {c.details && (
-            <>
-              <button
-                onClick={() => setOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-white/[0.03] px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground"
-              >
-                <Info size={12} />
-                <span className="uppercase tracking-[0.16em]">SPECS</span>
-              </button>
+          <button
+            onClick={() => setOpen(true)}
+            className="flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3 py-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+          >
+            <Info size={12} />
+            VIEW SPECS
+          </button>
 
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="bg-surface border-white/10">
-                  <DialogHeader>
-                    <div className="flex items-center gap-2">
-                      <DialogTitle className="text-base font-semibold">
-                        {c.name}
-                      </DialogTitle>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ${stockMeta[c.stock].className}`}
-                      >
-                        {stockMeta[c.stock].label}
-                      </span>
-                    </div>
-                    <DialogDescription className="font-mono text-[11px] text-muted-foreground">
-                      {c.partNumber} · {c.category}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="mt-2">
-                    <SpecGrid d={c.details} category={c.category} />
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </>
-          )}
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent className="max-h-[60vh] overflow-y-auto bg-surface border-white/10">
+              <DialogHeader>
+                <div className="flex items-center gap-2">
+                  <DialogTitle className="text-base font-semibold">
+                    {c.name}
+                  </DialogTitle>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ${stockMeta[c.stock].className}`}
+                  >
+                    {stockMeta[c.stock].label}
+                  </span>
+                </div>
+                <DialogDescription className="font-mono text-[11px] text-muted-foreground">
+                  {c.partNumber} · {c.category}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="mt-2">
+                <SpecGrid d={c.details} category={c.category} />
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
 
@@ -191,7 +187,10 @@ function SpecGrid({
   d: ItemDetails;
   category: ProjectComponentModel["category"];
 }) {
-  const v = `${d.voltageMin}–${d.voltageMax} V`;
+  const v =
+    d.voltageMin !== undefined && d.voltageMax !== undefined
+      ? `${d.voltageMin}–${d.voltageMax} V`
+      : undefined;
   return (
     <div className="mt-3 flex flex-col gap-2">
       <Group title="Universal">

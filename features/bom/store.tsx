@@ -187,6 +187,7 @@ export function BomProvider({ children }: { children: ReactNode }) {
       moveToLastCart,
     };
   }, [
+    clearProject,
     components,
     originalComponents,
     hasUnsavedChanges,

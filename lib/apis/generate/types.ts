@@ -1,8 +1,4 @@
-import {
-  ItemDetails,
-  ItemModel,
-  StockStatus,
-} from "@/lib/apis/inventory/types";
+import { ItemModel } from "@/lib/apis/inventory/types";
 import { BomAlert } from "@/features/bom/data";
 import {
   ComponentEdgeType,
@@ -42,7 +38,7 @@ export interface GeneratedSpecs {
 
 export interface GeneratedBOM {
   items: ItemModel[];
-  components: Omit<ProjectComponentModel, "projectId">[];
+  components: ProjectComponentModel[];
   alerts: BomAlert[];
   tag: ProjectTagEnum;
 }

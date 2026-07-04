@@ -209,7 +209,7 @@ export default function BomScreen() {
               c.unitPrice !== oc.unitPrice ||
               c.name !== oc.name ||
               c.partNumber !== oc.partNumber ||
-              c.specs !== oc.specs
+              c.shortDesc !== oc.shortDesc
             );
           });
 

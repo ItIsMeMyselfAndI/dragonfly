@@ -152,7 +152,7 @@ export async function createComponentsBatch(
         inventory_id: comp.inventoryId,
         name: comp.name,
         part_number: comp.partNumber,
-        specs: comp.specs,
+        shortDesc: comp.shortDesc,
         unit_price: comp.unitPrice,
         qty: comp.qty,
         category: comp.category,
@@ -162,8 +162,9 @@ export async function createComponentsBatch(
     )
     .select("project_id");
 
-  if (error) throw new Error(`Error creating components batch: ${error.message}`);
-  
+  if (error)
+    throw new Error(`Error creating components batch: ${error.message}`);
+
   // Fetch updated data to include dynamic stock info from JOIN
   return await getComponentsByProjectId(data[0].project_id);
 }
@@ -497,7 +498,7 @@ export async function getComponentsByProjectId(
       inventoryId: item.inventory_id,
       name: item.name,
       partNumber: item.part_number,
-      specs: item.specs,
+      shortDesc: item.shortDesc,
       unitPrice: item.unit_price,
       qty: item.qty,
       stock: inv?.stock || "OUT",
@@ -523,7 +524,7 @@ export async function createComponent(
         inventory_id: component.inventoryId,
         name: component.name,
         part_number: component.partNumber,
-        specs: component.specs,
+        shortDesc: component.shortDesc,
         unit_price: component.unitPrice,
         qty: component.qty,
         category: component.category,
@@ -551,7 +552,7 @@ export async function updateComponent(
     updatePayload.inventory_id = updated.inventoryId;
   if ("name" in updated) updatePayload.name = updated.name;
   if ("partNumber" in updated) updatePayload.part_number = updated.partNumber;
-  if ("specs" in updated) updatePayload.specs = updated.specs;
+  if ("shortDesc" in updated) updatePayload.shortDesc = updated.shortDesc;
   if ("unitPrice" in updated) updatePayload.unit_price = updated.unitPrice;
   if ("qty" in updated) updatePayload.qty = updated.qty;
   if ("category" in updated) updatePayload.category = updated.category;

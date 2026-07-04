@@ -11,7 +11,7 @@ export async function getAllItems(): Promise<ItemModel[]> {
     id: item.id,
     name: item.name,
     partNumber: item.part_number,
-    specs: item.specs,
+    shortDesc: item.shortDesc,
     unitPrice: item.unit_price,
     stock: item.stock,
     stockCount: item.stock_count,
@@ -37,7 +37,7 @@ export async function getItemById(id: string): Promise<ItemModel | undefined> {
     id: data.id,
     name: data.name,
     partNumber: data.part_number,
-    specs: data.specs,
+    shortDesc: data.shortDesc,
     unitPrice: data.unit_price,
     stock: data.stock,
     stockCount: data.stock_count,
@@ -55,7 +55,7 @@ export async function createItem(component: ItemModel): Promise<ItemModel> {
         id: component.id,
         name: component.name,
         part_number: component.partNumber,
-        specs: component.specs,
+        shortDesc: component.shortDesc,
         unit_price: component.unitPrice,
         stock: component.stock,
         stock_count: component.stockCount,
@@ -73,7 +73,7 @@ export async function createItem(component: ItemModel): Promise<ItemModel> {
     id: data.id,
     name: data.name,
     partNumber: data.part_number,
-    specs: data.specs,
+    shortDesc: data.shortDesc,
     unitPrice: data.unit_price,
     stock: data.stock,
     stockCount: data.stock_count,
@@ -92,7 +92,8 @@ export async function updateItem(
   if ("name" in updatedItem) updatePayload.name = updatedItem.name;
   if ("partNumber" in updatedItem)
     updatePayload.part_number = updatedItem.partNumber;
-  if ("specs" in updatedItem) updatePayload.specs = updatedItem.specs;
+  if ("shortDesc" in updatedItem)
+    updatePayload.shortDesc = updatedItem.shortDesc;
   if ("unitPrice" in updatedItem)
     updatePayload.unit_price = updatedItem.unitPrice;
   if ("stock" in updatedItem) updatePayload.stock = updatedItem.stock;
@@ -116,7 +117,7 @@ export async function updateItem(
     id: data.id,
     name: data.name,
     partNumber: data.part_number,
-    specs: data.specs,
+    shortDesc: data.shortDesc,
     unitPrice: data.unit_price,
     stock: data.stock,
     stockCount: data.stock_count,
@@ -136,7 +137,7 @@ export async function createItemsBatch(
         id: c.id,
         name: c.name,
         part_number: c.partNumber,
-        specs: c.specs,
+        shortDesc: c.shortDesc,
         unit_price: c.unitPrice,
         stock: c.stock,
         stock_count: c.stockCount,
@@ -147,12 +148,13 @@ export async function createItemsBatch(
     )
     .select();
 
-  if (error) throw new Error(`Error creating components batch: ${error.message}`);
+  if (error)
+    throw new Error(`Error creating components batch: ${error.message}`);
   return data.map((d) => ({
     id: d.id,
     name: d.name,
     partNumber: d.part_number,
-    specs: d.specs,
+    shortDesc: d.shortDesc,
     unitPrice: d.unit_price,
     stock: d.stock,
     stockCount: d.stock_count,

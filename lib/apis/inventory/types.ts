@@ -19,12 +19,12 @@ export enum MountType {
 }
 
 export interface ItemDetails {
-  componentId: string;
+  inventoryId: string;
   // Universal
-  mounting: MountType;
-  package: string;
-  voltageMin: number;
-  voltageMax: number;
+  mounting?: MountType;
+  package?: string;
+  voltageMin?: number;
+  voltageMax?: number;
   // Passive
   primaryValue?: string;
   powerRating?: string;
@@ -47,11 +47,11 @@ export interface ItemModel {
   id: string;
   name: string;
   partNumber: string;
-  specs: string;
+  shortDesc: string;
   unitPrice: number;
   stock: StockStatus;
   stockCount: number;
   category: ItemCategory;
   pins: string[];
-  details?: ItemDetails;
+  details: ItemDetails;
 }
