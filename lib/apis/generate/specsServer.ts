@@ -21,28 +21,19 @@ export async function generateSpecsLogic(
   }
   if (prompt) contents.push({ text: prompt });
 
-  return runWithModelFallback(
+  const generatedSpecs = await runWithModelFallback(
     ai,
     contents,
     {
-      systemInstruction: `You are an expert Electronics Engineer. Analyze the schematic/description. 
+      systemInstruction: `
+      You are an expert Electronics Engineer. Analyze the schematic/description. 
       For every component, perform the calculation. 
       CRITICAL: ONLY USE ASCII CHARACTERS. Do not use special symbols like Greek letters, mathematical symbols (e.g., Ω, η), or non-ASCII characters. Replace them with their ASCII equivalent (e.g., replace 'Ω' with 'Ohm', 'η' with 'eta').
-      Return JSON with this structure:
-      {
-        "specs": [
-          {
-            "componentName": string,
-            "computedSpecs": string,
-            "reasoning": string,
-            "calculation": { "formula": string, "result": string }
-          }
-        ],
-        "summary": string
-      }`,
+      `,
       responseMimeType: "application/json",
       responseSchema: SpecsExtractionSchema,
     },
-    JSON.parse,
+    (text) => JSON.parse(text || "{}") as GeneratedSpecs,
   );
+  return generatedSpecs;
 }

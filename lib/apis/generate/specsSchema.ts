@@ -9,19 +9,41 @@ export const SpecsExtractionSchema: Schema = {
       items: {
         type: Type.OBJECT,
         properties: {
-          componentName: { type: Type.STRING },
-          computedSpecs: { type: Type.STRING },
-          reasoning: { type: Type.STRING },
+          componentName: {
+            type: Type.STRING,
+            description:
+              "Name of the component for which the specs are computed.",
+          },
+          computedSpecs: {
+            type: Type.STRING,
+            description:
+              "The computed specifications for the component, derived from the analysis.",
+          },
+          reasoning: {
+            type: Type.STRING,
+            description: "The reasoning behind the computed specifications.",
+          },
           calculation: {
             type: Type.OBJECT,
             properties: {
-              formula: { type: Type.STRING },
-              result: { type: Type.STRING },
+              formula: {
+                type: Type.STRING,
+                description: "The formula used for the calculation.",
+              },
+              result: {
+                type: Type.STRING,
+                description: "The result of the calculation.",
+              },
             },
             required: ["formula", "result"],
           },
         },
-        required: ["componentName", "computedSpecs", "reasoning", "calculation"],
+        required: [
+          "componentName",
+          "computedSpecs",
+          "reasoning",
+          "calculation",
+        ],
       },
     },
     summary: { type: Type.STRING },
