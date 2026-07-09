@@ -1,45 +1,65 @@
-import { GoogleGenAI } from "@google/genai";
+import { AIMessage, AIConfig } from "@/lib/ai/aiService";
+import { ProviderType } from "@/lib/ai/types";
+import { ProviderConfigManager } from "@/lib/ai/providerConfig";
+import { ImageProcessor } from "@/lib/ai/imageProcessor";
+import { GeminiGenAIProvider } from "@/lib/ai/providers/geminiGenAIProvider";
+import { OpenAIProvider } from "@/lib/ai/providers/openaiProvider";
+import { OpenRouterProvider } from "@/lib/ai/providers/openrouterProvider";
+import { ChatGPTProvider } from "@/lib/ai/providers/chatgptProvider";
 import { BomExtractionSchema } from "@/lib/apis/generate/bomSchema";
 import { GeneratedBOM } from "./types";
-import { getNextApiKey } from "./keyCycler";
-import { normalizeGenerationTimestamp, runWithModelFallback } from "./utils";
+import { normalizeGenerationTimestamp } from "./utils";
+
+const providerConfig = new ProviderConfigManager();
+
+function createProvider(providerType: ProviderType, apiKey: string) {
+  switch (providerType) {
+    case ProviderType.GEMINI:
+      return new GeminiGenAIProvider(apiKey);
+    case ProviderType.OPENAI:
+      return new OpenAIProvider(apiKey);
+    case ProviderType.OPENROUTER:
+      return new OpenRouterProvider(apiKey);
+    case ProviderType.CHATGPT:
+      return new ChatGPTProvider(apiKey);
+    default:
+      return new GeminiGenAIProvider(apiKey);
+  }
+}
 
 export async function generateBomLogic(
   specsContext: string | null,
   image: File | null,
   projectId: string,
   generationTimestamp?: string,
+  providerType: ProviderType = ProviderType.GEMINI,
 ): Promise<GeneratedBOM> {
-  const ai = new GoogleGenAI({ apiKey: getNextApiKey() });
   const generationSuffix = normalizeGenerationTimestamp(generationTimestamp);
 
-  // 1. Prepare inputs for Gemini
-  const contents = [];
+  const contents: AIMessage[] = [];
   if (image) {
-    const buffer = Buffer.from(await image.arrayBuffer());
+    const { data, mimeType } = await ImageProcessor.toBase64(image);
     contents.push({
-      inlineData: {
-        data: buffer.toString("base64"),
-        mimeType: image.type,
-      },
+      role: "user",
+      content: "",
+      inlineData: { data, mimeType },
     });
   }
   if (specsContext) {
     contents.push({
-      text: `
-      RELEVANT SPECS ANAYSIS {
+      role: "user",
+      content: `RELEVANT SPECS ANALYSIS {
       ${specsContext}
-      }
-      `,
+      }`,
     });
   }
 
-  // 2. Call Gemini for Nodal Computation & Extraction
-  const generatedBOM = await runWithModelFallback(
-    ai,
-    contents,
-    {
-      systemInstruction: `You are an expert Electronics Engineer and System Architect. Your task is to generate a professional Bill of Materials (BOM) based on a provided technical specifications analysis and an optional schematic image.
+  const apiKey = providerConfig.getNextKey(providerType);
+  const provider = createProvider(providerType, apiKey);
+
+  const config: AIConfig = {
+    model: "gemini-2.5-flash-lite",
+    systemInstruction: `You are an expert Electronics Engineer and System Architect. Your task is to generate a professional Bill of Materials (BOM) based on a provided technical specifications analysis and an optional schematic image.
 
       CRITICAL INSTRUCTIONS:
       1. Source of Truth: The provided "RELEVANT SPECS ANALYSIS" is your PRIMARY SOURCE OF TRUTH.
@@ -56,11 +76,15 @@ export async function generateBomLogic(
       12. Substitutes (CRITICAL): For components that have viable, real-world alternative parts (e.g., a pin-compatible MCU, a drop-in sensor, a same-value passive from another manufacturer), generate TWO TO THREE alternatives as ADDITIONAL entries in the 'items' array. Each alternative MUST use a UNIQUE id following the pattern item-sub-{originalIndex}-{altIndex}-${generationSuffix} (e.g., item-sub-0-1-${generationSuffix}, item-sub-0-2-${generationSuffix}), with full 'details' populated. DO NOT add the alternatives to the 'components' array - they are alternative inventory parts, not separate BOM components.
       13. Substitute Mapping: For EVERY alternative you generate, add a pairing to the 'substitutes' array as { originalComponentId: <the original comp-{originalIndex}-${projectId} id>, substituteComponentId: <the item-sub-{originalIndex}-{altIndex}-${generationSuffix} id> }. The SAME originalComponentId will appear in multiple pairings (one per alternative). Every 'substituteComponentId' MUST correspond to an item present in the 'items' array, and every 'originalComponentId' MUST correspond to a component present in the 'components' array.
       14. Not all components need substitutes - only generate them where a sensible, compatible alternative genuinely exists, but when you do, aim for 2-3 options per component so the user can choose.`,
-      responseMimeType: "application/json",
-      responseSchema: BomExtractionSchema,
-    },
+    responseMimeType: "application/json",
+    responseSchema: BomExtractionSchema,
+  };
+
+  const response = await provider.generate(
+    contents,
+    config,
     (text) => JSON.parse(text || "{}") as GeneratedBOM,
   );
 
-  return generatedBOM;
+  return response.data;
 }

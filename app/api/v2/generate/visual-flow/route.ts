@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateVisualFlowLogic } from "@/lib/apis/generate/visualFlowServer";
+import { ProviderType } from "@/lib/ai/types";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,6 +10,7 @@ export async function POST(req: NextRequest) {
     const prompt = formData.get("prompt") as string | null;
     const image = formData.get("image") as File | null;
     const projectId = formData.get("projectId") as string;
+    const providerType = formData.get("providerType") as "gemini" | "openai" | "openrouter" | "chatgpt" | null;
 
     if (!bomComponentsContext && !specsContext) {
       return NextResponse.json(
@@ -23,6 +25,7 @@ export async function POST(req: NextRequest) {
       prompt,
       image,
       projectId,
+      (providerType as ProviderType) || ProviderType.GEMINI,
     );
     return NextResponse.json(result);
   } catch (error: any) {
