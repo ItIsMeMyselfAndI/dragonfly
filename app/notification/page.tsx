@@ -5,21 +5,15 @@ import { Bell } from "lucide-react";
 import { useAuth } from "@/features/auth/store";
 import { AuthModal } from "@/components/AuthModal";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function NotificationPage() {
   const { isGuest } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-6 px-5 pt-14 pb-24">
-      <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          Notifications
-        </p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          What's new
-        </h1>
-      </header>
+    <div className="flex flex-col gap-6 px-5 pt-2 pb-24">
+      <PageHeader trail={[{ label: "Notifications" }]} />
 
       {isGuest ? (
         <div className="flex items-start gap-3 rounded-2xl bg-surface/60 p-4 ring-1 ring-white/5">
