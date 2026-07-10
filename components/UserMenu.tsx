@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Settings, Sun, Moon, User } from "lucide-react";
+import { Settings, Sun, Moon, User } from "lucide-react";
 import { useAuth } from "@/features/auth/store";
 import { AuthModal } from "@/components/AuthModal";
 import { AccountModal } from "@/components/AccountModal";
@@ -34,11 +34,14 @@ export function UserMenu() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   const initial = getInitials(profile?.username, user?.email);
+  const isDark = mounted ? theme === "dark" : true;
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
   return (
     <>
@@ -59,32 +62,22 @@ export function UserMenu() {
             ) : (
               <User className="size-5 text-primary" />
             )}
-            {isGuest && (
-              <span className="absolute -top-0.5 -left-0.5 size-3 rounded-full bg-destructive ring-2 ring-background" />
-            )}
           </button>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem
-            onSelect={() => router.push("/notification")}
-            className={itemClass}
-          >
-            <Bell />
-            <span>Notifications</span>
-            {isGuest && (
-              <span className="ml-auto size-2 rounded-full bg-destructive" />
-            )}
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
+            onSelect={(e) => {
+              e.preventDefault();
+              toggleTheme();
+            }}
             className={itemClass}
           >
             <Sun />
             <Switch
-              checked={mounted ? theme === "dark" : true}
+              checked={isDark}
               onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
+              onClick={(e) => e.stopPropagation()}
               aria-label="Toggle theme"
               className="mx-auto"
             />
@@ -96,7 +89,18 @@ export function UserMenu() {
           <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault();
-              setSettingsOpen(true);
+              setAccountOpen(true);
+            }}
+            className={itemClass}
+          >
+            <User />
+            <span>Account</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              router.push("/settings");
             }}
             className={itemClass}
           >
@@ -107,9 +111,9 @@ export function UserMenu() {
       </DropdownMenu>
 
       {isGuest ? (
-        <AuthModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+        <AuthModal open={accountOpen} onOpenChange={setAccountOpen} />
       ) : (
-        <AccountModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+        <AccountModal open={accountOpen} onOpenChange={setAccountOpen} />
       )}
     </>
   );
