@@ -67,7 +67,7 @@ export default function Home() {
 
   const [showTip, setShowTip] = useState(false);
   const [tipMessage, setTipMessage] = useState(
-    "Please enter a description to generate a BOM.",
+    "Please enter a prompt or upload an image to generate a project.",
   );
   const [projects, setProjects] = useState<ProjectModel[]>([]);
   const [previewImage, setPreviewImage] = useState<{
@@ -94,7 +94,7 @@ export default function Home() {
 
   const handleGenerate = async () => {
     if (prompt.trim() === "" && selectedFiles.length === 0) {
-      setTipMessage("Please enter a description to generate a BOM.");
+      setTipMessage("Please enter a prompt or upload an image to generate a project.");
       setShowTip(true);
       setTimeout(() => setShowTip(false), 3000);
       return;
@@ -146,19 +146,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col gap-6 px-5 pt-14 pb-48">
-      {/* Header */}
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Dragonfly
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            {"Let's build something"}
-          </h1>
-        </div>
-      </header>
-
+    <div className="flex flex-col gap-6 px-5 pt-2 pb-48">
       {/* Upload card */}
       <motion.div
         whileTap={{ scale: 0.985 }}
@@ -169,7 +157,7 @@ export default function Home() {
         className={`group relative flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed px-6 py-10 text-center transition-colors cursor-pointer ${
           isDragging
             ? "border-primary bg-primary/5"
-            : "border-white/10 bg-surface/40 hover:border-primary/40"
+            : "border-primary/30 bg-surface/40 hover:border-primary"
         }`}
       >
         <input
@@ -289,7 +277,7 @@ export default function Home() {
               <button
                 key={s}
                 onClick={() => setPrompt(s)}
-                className="rounded-full bg-white/[0.04] px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                className="rounded-full bg-surface ring-1 ring-border px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
               >
                 {s}
               </button>
@@ -300,25 +288,6 @@ export default function Home() {
 
       {/* Generate */}
       <div className="flex flex-col gap-2">
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={handleGenerate}
-          disabled={isLoading || (rateLimitStatus?.remaining !== undefined && rateLimitStatus.remaining <= 0)}
-          className="glow-primary mt-2 flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 font-semibold text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 size={18} className="animate-spin" />
-              {loadingText}
-            </>
-          ) : (
-            <>
-              <Sparkles size={18} />
-              Generate Project
-            </>
-          )}
-        </motion.button>
-
         {/* Rate limit status */}
         {rateLimitStatus && (
           <p className="text-center text-xs text-muted-foreground">
@@ -337,6 +306,25 @@ export default function Home() {
             )}
           </p>
         )}
+
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={handleGenerate}
+          disabled={isLoading || (rateLimitStatus?.remaining !== undefined && rateLimitStatus.remaining <= 0)}
+          className="glow-primary mt-2 flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 font-semibold text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 size={18} className="animate-spin" />
+              {loadingText}
+            </>
+          ) : (
+            <>
+              <Sparkles size={18} />
+              Generate Project
+            </>
+          )}
+        </motion.button>
       </div>
 
       {showTip && (
