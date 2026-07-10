@@ -12,7 +12,6 @@ import {
   Wifi,
   Network,
   Cpu,
-  X,
   Loader2,
   HelpCircle,
   Trash2,
@@ -63,6 +62,7 @@ export default function Home() {
     loadingText,
     rateLimitStatus,
     generate,
+    cancelGeneration,
   } = useInspire();
 
   const [showTip, setShowTip] = useState(false);
@@ -291,7 +291,11 @@ export default function Home() {
         {/* Rate limit status */}
         {rateLimitStatus && (
           <p className="text-center text-xs text-muted-foreground">
-            {rateLimitStatus.remaining > 0 ? (
+            {rateLimitStatus.unlimited ? (
+              <span className="text-success">
+                Unlimited generations — using your own API keys.
+              </span>
+            ) : rateLimitStatus.remaining > 0 ? (
               <>
                 {rateLimitStatus.remaining} of {rateLimitStatus.limit} free
                 generations left today
@@ -301,7 +305,7 @@ export default function Home() {
                 Daily limit reached.{" "}
                 {rateLimitStatus.isGuest
                   ? "Sign up for more generations."
-                  : "Try again tomorrow."}
+                  : "Add your API keys to lift the limit and use your provider's quota."}
               </span>
             )}
           </p>
@@ -310,7 +314,12 @@ export default function Home() {
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={handleGenerate}
-          disabled={isLoading || (rateLimitStatus?.remaining !== undefined && rateLimitStatus.remaining <= 0)}
+          disabled={
+            isLoading ||
+            (rateLimitStatus?.unlimited !== true &&
+              rateLimitStatus?.remaining !== undefined &&
+              rateLimitStatus.remaining <= 0)
+          }
           className="glow-primary mt-2 flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 font-semibold text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (
@@ -325,6 +334,16 @@ export default function Home() {
             </>
           )}
         </motion.button>
+
+        {isLoading && (
+          <button
+            type="button"
+            onClick={cancelGeneration}
+            className="mt-2 flex items-center justify-center gap-2 rounded-full bg-destructive px-6 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90"
+          >
+            Cancel
+          </button>
+        )}
       </div>
 
       {showTip && (
@@ -349,9 +368,10 @@ export default function Home() {
         </div>
         <div className="flex flex-col gap-2">
           {projects.map((p) => (
-            <div
+            <Link
               key={p.id}
-              className="flex items-center justify-between rounded-2xl bg-surface/60 p-4 ring-1 ring-white/5"
+              href={`/bom?generate=dynamic&prompt=${encodeURIComponent(p.name)}`}
+              className="flex items-center justify-between rounded-2xl bg-surface/60 p-4 ring-1 ring-white/5 transition-colors hover:bg-surface-elevated"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -375,7 +395,7 @@ export default function Home() {
                   <Clock size={12} /> {formatRelativeTime(p.time)}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

@@ -41,7 +41,6 @@ export function UserMenu() {
 
   const initial = getInitials(profile?.username, user?.email);
   const isDark = mounted ? theme === "dark" : true;
-  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
   return (
     <>
@@ -66,18 +65,11 @@ export function UserMenu() {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              toggleTheme();
-            }}
-            className={itemClass}
-          >
+          <DropdownMenuItem className={itemClass}>
             <Sun />
             <Switch
               checked={isDark}
               onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
-              onClick={(e) => e.stopPropagation()}
               aria-label="Toggle theme"
               className="mx-auto"
             />
@@ -87,10 +79,7 @@ export function UserMenu() {
           <DropdownMenuSeparator />
 
           <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              setAccountOpen(true);
-            }}
+            onSelect={() => setAccountOpen(true)}
             className={itemClass}
           >
             <User />
@@ -98,10 +87,7 @@ export function UserMenu() {
           </DropdownMenuItem>
 
           <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              router.push("/settings");
-            }}
+            onSelect={() => router.push("/settings")}
             className={itemClass}
           >
             <Settings />
