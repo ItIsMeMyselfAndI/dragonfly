@@ -10,6 +10,9 @@ import {
   type ReactNode,
 } from "react";
 import { ProviderType } from "@/lib/ai/types";
+import { UserSettings, DEFAULT_USER_SETTINGS } from "@/lib/settings/types";
+import { getUserSettings, saveUserSettings } from "@/lib/settings/client";
+import { useAuth } from "@/features/auth/store";
 
 export const PROVIDER_OPTIONS: { value: ProviderType; label: string }[] = [
   { value: ProviderType.GEMINI, label: "Gemini" },
@@ -39,54 +42,92 @@ interface SettingsStore {
   setNotificationsEnabled: (value: boolean) => void;
 }
 
-const STORAGE_KEY = "dragonfly-settings";
-
-function loadSettings(): Partial<SettingsStore> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Partial<SettingsStore>) : {};
-  } catch {
-    return {};
-  }
-}
-
 const Ctx = createContext<SettingsStore | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [defaultProvider, setProvider] = useState<ProviderType>(
-    ProviderType.GEMINI,
+    DEFAULT_USER_SETTINGS.defaultProvider,
   );
-  const [defaultModel, setModel] = useState<string>("gemini-2.5-flash-lite");
-  const [notificationsEnabled, setNotifications] = useState(true);
+  const [defaultModel, setModel] = useState<string>(
+    DEFAULT_USER_SETTINGS.defaultModel,
+  );
+  const [notificationsEnabled, setNotifications] = useState(
+    DEFAULT_USER_SETTINGS.notificationsEnabled,
+  );
 
-  /* eslint-disable react-hooks/set-state-in-effect */
+  // Load persisted settings for signed-in users. Guests have no stored
+  // settings, so they reset to the in-memory defaults.
   useEffect(() => {
-    const saved = loadSettings();
-    if (saved.defaultProvider) setProvider(saved.defaultProvider);
-    if (saved.defaultModel) setModel(saved.defaultModel);
-    if (typeof saved.notificationsEnabled === "boolean") {
-      setNotifications(saved.notificationsEnabled);
+    let active = true;
+    if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setProvider(DEFAULT_USER_SETTINGS.defaultProvider);
+      setModel(DEFAULT_USER_SETTINGS.defaultModel);
+      setNotifications(DEFAULT_USER_SETTINGS.notificationsEnabled);
+      return;
     }
-  }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
+    getUserSettings()
+      .then((settings: UserSettings) => {
+        if (!active) return;
+        setProvider(settings.defaultProvider);
+        setModel(settings.defaultModel);
+        setNotifications(settings.notificationsEnabled);
+      })
+      .catch(() => {
+        /* keep defaults on failure */
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ defaultProvider, defaultModel, notificationsEnabled }),
-      );
-    } catch {
-      // ignore persistence errors
-    }
-  }, [defaultProvider, defaultModel, notificationsEnabled]);
+  const setDefaultProvider = useCallback(
+    (provider: ProviderType) => {
+      const models = MODELS_BY_PROVIDER[provider];
+      const nextModel = models.includes(defaultModel)
+        ? defaultModel
+        : models[0];
+      setProvider(provider);
+      setModel(nextModel);
+      if (user) {
+        void saveUserSettings({
+          defaultProvider: provider,
+          defaultModel: nextModel,
+          notificationsEnabled,
+        }).catch(() => {});
+      }
+    },
+    [user, defaultModel, notificationsEnabled],
+  );
 
-  const setDefaultProvider = useCallback((provider: ProviderType) => {
-    setProvider(provider);
-    const models = MODELS_BY_PROVIDER[provider];
-    setModel((prev) => (models.includes(prev) ? prev : models[0]));
-  }, []);
+  const setDefaultModel = useCallback(
+    (model: string) => {
+      setModel(model);
+      if (user) {
+        void saveUserSettings({
+          defaultProvider,
+          defaultModel: model,
+          notificationsEnabled,
+        }).catch(() => {});
+      }
+    },
+    [user, defaultProvider, notificationsEnabled],
+  );
+
+  const setNotificationsEnabled = useCallback(
+    (value: boolean) => {
+      setNotifications(value);
+      if (user) {
+        void saveUserSettings({
+          defaultProvider,
+          defaultModel,
+          notificationsEnabled: value,
+        }).catch(() => {});
+      }
+    },
+    [user, defaultProvider, defaultModel],
+  );
 
   const value = useMemo<SettingsStore>(
     () => ({
@@ -94,14 +135,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       defaultModel,
       notificationsEnabled,
       setDefaultProvider,
-      setDefaultModel: setModel,
-      setNotificationsEnabled: setNotifications,
+      setDefaultModel,
+      setNotificationsEnabled,
     }),
     [
       defaultProvider,
       defaultModel,
       notificationsEnabled,
       setDefaultProvider,
+      setDefaultModel,
+      setNotificationsEnabled,
     ],
   );
 

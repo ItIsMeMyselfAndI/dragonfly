@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerUser } from "@/lib/supabase/server";
-import { getUserApiKeys, saveUserApiKeys } from "@/lib/settings/server";
+import {
+  getUserApiKeyState,
+  saveUserApiKeys,
+} from "@/lib/settings/server";
 import { ProviderType } from "@/lib/ai/types";
 
 export async function GET() {
@@ -8,8 +11,8 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const keys = await getUserApiKeys(user.id);
-  return NextResponse.json({ keys });
+  const state = await getUserApiKeyState(user.id);
+  return NextResponse.json(state);
 }
 
 export async function POST(req: Request) {
@@ -17,10 +20,14 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const body = await req.json().catch(() => ({}) as { keys?: Record<string, string> });
-  const keys = (body.keys ?? {}) as Partial<Record<ProviderType, string>>;
+  const body = (await req.json().catch(() => ({}))) as {
+    keys?: Partial<Record<ProviderType, string[]>>;
+    enabled?: boolean;
+  };
+  const keys = (body.keys ?? {}) as Partial<Record<ProviderType, string[]>>;
+  const enabled = body.enabled ?? false;
   try {
-    await saveUserApiKeys(user.id, keys);
+    await saveUserApiKeys(user.id, keys, enabled);
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json(
