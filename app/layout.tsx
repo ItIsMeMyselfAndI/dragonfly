@@ -12,6 +12,7 @@ import { CartProvider } from "@/features/cart/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/features/auth/store";
 import { SettingsProvider } from "@/features/settings/store";
+import { NavigationGuardProvider } from "@/components/navigation/NavigationGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,8 +54,10 @@ export default function RootLayout({
                   <FlowProvider>
                     <CartProvider>
                       <SheetProvider>
-                        <MobileShell>{children}</MobileShell>
-                        <Toaster position="top-center" theme="dark" />
+                        <NavigationGuardProvider>
+                          <MobileShell>{children}</MobileShell>
+                          <Toaster position="top-center" theme="dark" />
+                        </NavigationGuardProvider>
                       </SheetProvider>
                     </CartProvider>
                   </FlowProvider>

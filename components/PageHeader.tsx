@@ -2,8 +2,8 @@
 
 import { Fragment } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
+import { useNavigate } from "@/components/navigation/NavigationGuard";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -20,13 +20,13 @@ export function PageHeader({
   trail: { label: string; href?: string }[];
   showBack?: boolean;
 }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   return (
     <header className="flex items-center gap-3">
       {showBack && (
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => navigate("back")}
           aria-label="Go back"
           className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-surface text-primary ring-1 ring-primary/30 outline-none transition-colors hover:bg-primary/10"
         >
@@ -37,7 +37,15 @@ export function PageHeader({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Home</Link>
+              <Link
+                href="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate("/");
+                }}
+              >
+                Home
+              </Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           {trail.map((item, i) => (
@@ -46,7 +54,15 @@ export function PageHeader({
               <BreadcrumbItem>
                 {item.href ? (
                   <BreadcrumbLink asChild>
-                    <Link href={item.href}>{item.label}</Link>
+                    <Link
+                      href={item.href}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate(item.href as string);
+                      }}
+                    >
+                      {item.label}
+                    </Link>
                   </BreadcrumbLink>
                 ) : (
                   <BreadcrumbPage>{item.label}</BreadcrumbPage>
