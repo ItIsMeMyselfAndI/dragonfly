@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useInspire } from "@/features/inspire/store";
+import { useAuth } from "@/features/auth/store";
 
 const categoryIcons: Record<string, typeof Bot> = {
   Robotics: Bot,
@@ -78,18 +79,27 @@ export default function Home() {
 
   const { loadDynamicProject } = useBom();
   const { loadDynamicFlow } = useFlow();
+  const { user } = useAuth();
+  const requesterKey = user?.id ?? "guest";
 
   useEffect(() => {
+    let cancelled = false;
+    // Re-fetch scoped to the current requester. Re-runs on auth change
+    // (login / logout) so a previous user's projects are replaced, never
+    // persisted after logout.
     async function fetchProjects() {
       try {
         const data = await getAllProjects();
-        setProjects(data.slice(0, 2));
+        if (!cancelled) setProjects(data.slice(0, 2));
       } catch (e) {
         console.error("Failed to fetch projects", e);
       }
     }
     fetchProjects();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [requesterKey]);
 
   const handleGenerate = async () => {
     if (prompt.trim() === "" && selectedFiles.length === 0) {
