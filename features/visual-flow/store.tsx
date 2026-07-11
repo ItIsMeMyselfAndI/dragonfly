@@ -5,10 +5,13 @@ import {
   SetStateAction,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { useSessionVersion } from "@/features/auth/store";
 import {
   ProjectModel,
   ProjectNodeModel,
@@ -52,6 +55,20 @@ export function FlowProvider({ children }: { children: ReactNode }) {
   >([]);
   const [inventory, setInventory] = useState<ItemModel[]>([]);
   const [projects, setProjects] = useState<ProjectModel[]>([]);
+
+  // When the authenticated identity changes (login / logout / switch account)
+  // the cached project list and open project belong to a different requester
+  // and must be cleared. The pages re-fetch from the server on the same
+  // identity change, so the list is repopulated with the correct scope.
+  const sessionVersion = useSessionVersion();
+  const prevVersion = useRef(0);
+  useEffect(() => {
+    if (prevVersion.current !== 0 && prevVersion.current !== sessionVersion) {
+      setProjects([]);
+      setCurrentProject(null);
+    }
+    prevVersion.current = sessionVersion;
+  }, [sessionVersion, setProjects, setCurrentProject]);
 
   const loadDynamicFlow = useCallback(
     (

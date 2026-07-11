@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createNodesBatch } from "@/lib/apis/project/supabase/server";
+import { createNodesBatch } from "@/lib/apis/project/mongo/server";
 
 type Params = Promise<{ id: string }>;
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createReport } from '@/lib/apis/project/supabase/server';
+import { createReport } from '@/lib/apis/project/mongo/server';
 
 export async function POST(request: Request) {
   try {

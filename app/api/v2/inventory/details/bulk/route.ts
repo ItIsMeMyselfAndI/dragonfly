@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createItemDetailsBatch } from "@/lib/apis/inventory/supabase/detailsServer";
+import { createItemDetailsBatch } from "@/lib/apis/inventory/mongo/server";
 
 export async function POST(request: Request) {
   try {

@@ -23,12 +23,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/PageHeader";
 import {
   Check,
   RotateCcw,
   ChevronDown,
   Loader2,
   ImageIcon,
+  MoreHorizontal,
 } from "lucide-react";
 import {
   getAllProjects,
@@ -48,7 +50,7 @@ import {
 } from "@/features/visual-flow/CustomNode";
 import { toast } from "sonner";
 import { useFlow } from "@/features/visual-flow/store";
-import { ProjectModel } from "@/lib/apis/project/types";
+import { useAuth } from "@/features/auth/store";
 
 const nodeTypes = { custom: CustomNode };
 
@@ -68,31 +70,29 @@ export default function FlowScreen() {
     setProjects,
   } = useFlow();
 
+  const { user } = useAuth();
+  const requesterKey = user?.id ?? "guest";
+
   const [selected, setSelected] = useState<ComponentNode | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [titleDialogOpen, setTitleDialogOpen] = useState(false);
 
-  // Fetch initial project and component lists
+  // Fetch initial project and component lists. Re-runs whenever the requester
+  // identity changes (login / logout) so a different user's projects are never
+  // shown. The list is replaced (not merged) to drop any projects the server
+  // no longer returns for this requester.
   useEffect(() => {
     Promise.all([getAllProjects(), getAllItems()])
       .then(([projs, inv]) => {
-        setProjects((prev: ProjectModel[]) => {
-          const newProjects: ProjectModel[] = [
-            ...projs,
-            ...prev.filter(
-              (p: ProjectModel) =>
-                !projs.find((bp: ProjectModel) => bp.id === p.id),
-            ),
-          ];
-          return newProjects;
-        });
+        setProjects(projs);
         setInventory(inv);
         if (projs.length > 0 && !currentProject) {
           setCurrentProject(projs[0]);
         }
       })
       .catch((err) => console.error("Failed to load initial data:", err));
-  }, [setProjects, setInventory, setCurrentProject]); // Removed currentProject from deps to prevent reset loop
+  }, [requesterKey, setProjects, setInventory, setCurrentProject]); // Removed currentProject from deps to prevent reset loop
 
   // Fetch nodes, edges and components whenever the active project changes
   useEffect(() => {
@@ -388,43 +388,51 @@ export default function FlowScreen() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="px-5 pt-14 pb-4">
-        <header className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Visual flow
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-              {currentProject.name}
-            </h1>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 rounded-full max-w-[200px]"
+    <div className="flex flex-col h-full min-h-0">
+      <div className="px-5 pt-2 pb-2">
+        <header className="flex flex-col gap-2">
+          <PageHeader trail={[{ label: "Flow" }]} />
+          <div className="flex items-center justify-end gap-2">
+            <div className="flex max-w-[170px] min-w-0 items-center gap-1">
+              <span className="min-w-0 flex-1 overflow-hidden whitespace-nowrap text-sm font-semibold text-foreground">
+                {currentProject.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTitleDialogOpen(true)}
+                aria-label="Show full project name"
+                className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface text-muted-foreground ring-1 ring-white/10 outline-none transition-colors hover:bg-primary/10 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary"
               >
-                <span className="truncate">{currentProject.name}</span>{" "}
-                <ChevronDown size={16} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="max-w-[250px]">
-              {projects.map((project) => (
-                <DropdownMenuItem
-                  key={project.id}
-                  onClick={() => setCurrentProject(project)}
-                  className="focus:bg-primary/20 focus:text-primary transition-colors truncate"
+                <MoreHorizontal size={16} />
+              </button>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 rounded-full max-w-[200px]"
                 >
-                  {project.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <span className="truncate">{currentProject.name}</span>{" "}
+                  <ChevronDown size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="max-w-[250px]">
+                {projects.map((project) => (
+                  <DropdownMenuItem
+                    key={project.id}
+                    onClick={() => setCurrentProject(project)}
+                    className="focus:bg-primary/20 focus:text-primary transition-colors truncate"
+                  >
+                    {project.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
       </div>
 
-      <div className="flex-1 rounded-3xl border border-white/5 bg-surface/40 m-5 mb-28 relative">
+      <div className="flex-1 min-h-0 rounded-3xl border border-white/5 bg-surface/40 mx-5 mt-1 mb-28 relative">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -469,6 +477,17 @@ export default function FlowScreen() {
           </div>
         )}
       </div>
+
+      <Dialog open={titleDialogOpen} onOpenChange={setTitleDialogOpen}>
+        <DialogContent className="bg-surface border-white/10">
+          <DialogHeader>
+            <DialogTitle>Project</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-foreground/90 break-words">
+            {currentProject.name}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
         <DialogContent className="bg-surface border-white/10">

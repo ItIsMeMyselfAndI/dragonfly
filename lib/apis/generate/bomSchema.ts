@@ -25,7 +25,11 @@ const itemsSchema = {
         type: Type.STRING,
         description: "Concise specs (e.g., 7.4V · 2600mAh · JST)",
       },
-      unitPrice: { type: Type.NUMBER },
+      unitPrice: {
+        type: Type.NUMBER,
+        description:
+          "Unit price in PHILIPPINE PESO (PHP) - realistic local retail price, NOT USD. e.g. 250.0 means about ₱250.",
+      },
       stock: { type: Type.STRING, enum: Object.values(StockStatus) },
       stockCount: { type: Type.INTEGER },
       category: {
@@ -138,11 +142,35 @@ const alertsSchema = {
   },
 };
 
+// derive substitutes from items (alternative inventory parts)
+const substitutesSchema = {
+  type: Type.ARRAY,
+  description:
+    "Approved component substitutions. Each entry pairs an ORIGINAL component (from `components`) with an ALTERNATIVE inventory item (present in `items`) that can replace it. The substitute is NOT a separate BOM component - it is an alternative part in the inventory catalog. Generate 2-3 alternatives per component where sensible; the same originalComponentId will appear in multiple entries (one per alternative).",
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      originalComponentId: {
+        type: Type.STRING,
+        description:
+          "ID of the original component in `components` (e.g., comp-{index}-{projectId}).",
+      },
+      substituteComponentId: {
+        type: Type.STRING,
+        description:
+          "ID of the ALTERNATIVE inventory item (e.g., item-sub-{index}-{altIndex}-{suffix}) that can replace the original. This item MUST also be listed in `items`.",
+      },
+    },
+    required: ["originalComponentId", "substituteComponentId"],
+  },
+};
+
 export const BomExtractionSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     items: itemsSchema,
     components: componentsSchema,
+    substitutes: substitutesSchema,
     alerts: alertsSchema,
     tag: {
       type: Type.STRING,
@@ -150,5 +178,5 @@ export const BomExtractionSchema: Schema = {
       description: "The most appropriate category tag for this project.",
     },
   },
-  required: ["items", "components", "alerts", "tag"],
+  required: ["items", "components", "substitutes", "alerts", "tag"],
 };

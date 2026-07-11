@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   getItemDetailsByInventoryId,
   updateItemDetails,
-} from "@/lib/apis/inventory/supabase/detailsServer";
+} from "@/lib/apis/inventory/mongo/server";
 
 type Params = Promise<{ id: string }>;
 

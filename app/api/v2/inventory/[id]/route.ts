@@ -3,7 +3,7 @@ import {
   getItemById,
   updateItem,
   deleteItem,
-} from "@/lib/apis/inventory/supabase/server";
+} from "@/lib/apis/inventory/mongo/server";
 
 type Params = Promise<{ id: string }>;
 

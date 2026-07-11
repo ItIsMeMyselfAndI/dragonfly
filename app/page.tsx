@@ -12,7 +12,6 @@ import {
   Wifi,
   Network,
   Cpu,
-  X,
   Loader2,
   HelpCircle,
   Trash2,
@@ -35,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useInspire } from "@/features/inspire/store";
+import { useAuth } from "@/features/auth/store";
 
 const categoryIcons: Record<string, typeof Bot> = {
   Robotics: Bot,
@@ -61,11 +61,16 @@ export default function Home() {
     removeFile: removeFileFromStore,
     isLoading,
     loadingText,
+    isCancelling,
+    rateLimitStatus,
     generate,
+    cancelGeneration,
   } = useInspire();
 
   const [showTip, setShowTip] = useState(false);
+  const [tipMessage, setTipMessage] = useState("");
   const [projects, setProjects] = useState<ProjectModel[]>([]);
+  const [projectsError, setProjectsError] = useState(false);
   const [previewImage, setPreviewImage] = useState<{
     file: File;
     preview: string;
@@ -75,21 +80,35 @@ export default function Home() {
 
   const { loadDynamicProject } = useBom();
   const { loadDynamicFlow } = useFlow();
+  const { user } = useAuth();
+  const requesterKey = user?.id ?? "guest";
 
   useEffect(() => {
+    let cancelled = false;
+    // Re-fetch scoped to the current requester. Re-runs on auth change
+    // (login / logout) so a previous user's projects are replaced, never
+    // persisted after logout.
     async function fetchProjects() {
       try {
         const data = await getAllProjects();
-        setProjects(data.slice(0, 2));
+        if (!cancelled) {
+          setProjects(data.slice(0, 2));
+          setProjectsError(false);
+        }
       } catch (e) {
         console.error("Failed to fetch projects", e);
+        if (!cancelled) setProjectsError(true);
       }
     }
     fetchProjects();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [requesterKey]);
 
   const handleGenerate = async () => {
     if (prompt.trim() === "" && selectedFiles.length === 0) {
+      setTipMessage("Please enter a prompt or upload an image to generate a project.");
       setShowTip(true);
       setTimeout(() => setShowTip(false), 3000);
       return;
@@ -97,10 +116,20 @@ export default function Home() {
 
     try {
       await generate(router, loadDynamicProject, loadDynamicFlow);
-    } catch (e) {
+    } catch (e: unknown) {
       console.error(e);
+      // Keep the user-facing quota message; for pipeline/AI failures show a
+      // relevant message rather than leaking the raw or default prompt text.
+      const raw = e instanceof Error ? e.message : "";
+      const message =
+        raw.includes("generations today") || raw.includes("used all")
+          ? raw
+          : raw === "Max retries exceeded"
+            ? "Generation failed after multiple attempts. Please try again."
+            : "Something went wrong during generation. Please try again.";
+      setTipMessage(message);
       setShowTip(true);
-      setTimeout(() => setShowTip(false), 3000);
+      setTimeout(() => setShowTip(false), 5000);
     }
   };
 
@@ -136,22 +165,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col gap-6 px-5 pt-14 pb-48">
-      {/* Header */}
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Dragonfly
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            {"Let's build something"}
-          </h1>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-surface ring-1 ring-white/5">
-          <span className="text-sm font-medium text-primary">AK</span>
-        </div>
-      </header>
-
+    <div className="flex flex-col gap-6 px-5 pt-2 pb-48">
       {/* Upload card */}
       <motion.div
         whileTap={{ scale: 0.985 }}
@@ -162,7 +176,7 @@ export default function Home() {
         className={`group relative flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed px-6 py-10 text-center transition-colors cursor-pointer ${
           isDragging
             ? "border-primary bg-primary/5"
-            : "border-white/10 bg-surface/40 hover:border-primary/40"
+            : "border-primary/30 bg-surface/40 hover:border-primary"
         }`}
       >
         <input
@@ -282,7 +296,7 @@ export default function Home() {
               <button
                 key={s}
                 onClick={() => setPrompt(s)}
-                className="rounded-full bg-white/[0.04] px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                className="rounded-full bg-surface ring-1 ring-border px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
               >
                 {s}
               </button>
@@ -292,24 +306,72 @@ export default function Home() {
       </section>
 
       {/* Generate */}
-      <motion.button
-        whileTap={{ scale: 0.97 }}
-        onClick={handleGenerate}
-        disabled={isLoading}
-        className="glow-primary mt-2 flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 font-semibold text-primary-foreground disabled:opacity-70"
-      >
-        {isLoading ? (
-          <>
-            <Loader2 size={18} className="animate-spin" />
-            {loadingText}
-          </>
-        ) : (
-          <>
-            <Sparkles size={18} />
-            Generate Project
-          </>
+      <div className="flex flex-col gap-2">
+        {/* Rate limit status */}
+        {rateLimitStatus && (
+          <p className="text-center text-xs text-muted-foreground">
+            {rateLimitStatus.unlimited ? (
+              <span className="text-success">
+                Unlimited generations — using your own API keys.
+              </span>
+            ) : rateLimitStatus.remaining > 0 ? (
+              <>
+                {rateLimitStatus.remaining} of {rateLimitStatus.limit} free
+                generations left today
+              </>
+            ) : (
+              <span className="text-warning">
+                Daily limit reached.{" "}
+                {rateLimitStatus.isGuest
+                  ? "Sign up for more generations."
+                  : "Add your API keys to lift the limit and use your provider's quota."}
+              </span>
+            )}
+          </p>
         )}
-      </motion.button>
+
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={handleGenerate}
+          disabled={
+            isLoading ||
+            (rateLimitStatus?.unlimited !== true &&
+              rateLimitStatus?.remaining !== undefined &&
+              rateLimitStatus.remaining <= 0)
+          }
+          className="glow-primary mt-2 flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 font-semibold text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 size={18} className="animate-spin" />
+              {loadingText}
+            </>
+          ) : (
+            <>
+              <Sparkles size={18} />
+              Generate Project
+            </>
+          )}
+        </motion.button>
+
+        {isLoading && (
+          <button
+            type="button"
+            onClick={cancelGeneration}
+            disabled={isCancelling}
+            className="mt-2 flex items-center justify-center gap-2 rounded-full bg-destructive px-6 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-80 disabled:cursor-not-allowed"
+          >
+            {isCancelling ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Cancelling...
+              </>
+            ) : (
+              "Cancel"
+            )}
+          </button>
+        )}
+      </div>
 
       {showTip && (
         <motion.p
@@ -317,7 +379,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center text-xs text-warning mt-2"
         >
-          Please enter a description to generate a BOM.
+          {tipMessage}
         </motion.p>
       )}
 
@@ -332,10 +394,17 @@ export default function Home() {
           </Link>
         </div>
         <div className="flex flex-col gap-2">
-          {projects.map((p) => (
-            <div
+          {projectsError ? (
+            <div className="rounded-2xl bg-surface/60 p-4 ring-1 ring-white/5 text-sm text-muted-foreground">
+              Couldn&apos;t load projects right now. Try refreshing.
+            </div>
+          ) : projects.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No recent projects yet.</p>
+          ) : projects.map((p) => (
+            <Link
               key={p.id}
-              className="flex items-center justify-between rounded-2xl bg-surface/60 p-4 ring-1 ring-white/5"
+              href={`/bom?generate=dynamic&prompt=${encodeURIComponent(p.name)}`}
+              className="flex items-center justify-between rounded-2xl bg-surface/60 p-4 ring-1 ring-white/5 transition-colors hover:bg-surface-elevated"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -359,7 +428,7 @@ export default function Home() {
                   <Clock size={12} /> {formatRelativeTime(p.time)}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

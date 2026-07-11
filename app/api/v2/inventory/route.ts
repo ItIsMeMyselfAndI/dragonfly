@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAllItems, createItem } from "@/lib/apis/inventory/supabase/server";
+import { getAllItems, createItem } from "@/lib/apis/inventory/mongo/server";
 
 export async function GET() {
   try {

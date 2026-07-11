@@ -1,27 +1,53 @@
 import { GoogleGenAI, GenerateContentConfig } from "@google/genai";
+import { AIMessage } from "@/lib/ai/aiService";
 
 export const DEFAULT_MAX_RETRIES = 10;
 export const DEFAULT_BASE_DELAY_MS = 2000;
 
-function isRetriable(error: any): boolean {
-  // If no error status is available, default to retrying as it might be a network/generic issue
-  const status = error?.status || error?.code;
-  if (!status) return true;
+function isRetriable(error: unknown): boolean {
+  const e = error as { status?: number; httpStatus?: number };
+  const status = e?.httpStatus ?? e?.status;
+  // No status available (network/generic failure) -> retry, it might be transient.
+  if (status === undefined || status === null) return true;
 
   // 429: Too Many Requests
   // 500-599: Server Errors
   return status === 429 || (status >= 500 && status <= 599);
 }
 
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new Error("Generation cancelled"));
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new Error("Generation cancelled"));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 export async function withRetry<T>(
   fn: () => Promise<T>,
   retries = DEFAULT_MAX_RETRIES,
   baseDelayMs = DEFAULT_BASE_DELAY_MS,
+  signal?: AbortSignal,
 ): Promise<T> {
   for (let i = 0; i < retries; i++) {
+    if (signal?.aborted) throw new Error("Generation cancelled");
     try {
       return await fn();
-    } catch (error: any) {
+    } catch (error) {
+      if (signal?.aborted) throw new Error("Generation cancelled");
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Generation cancelled");
+      }
       if (i === retries - 1 || !isRetriable(error)) throw error;
 
       // Exponential backoff: 2^i * baseDelay
@@ -32,7 +58,11 @@ export async function withRetry<T>(
         `Attempt ${i + 1} failed (retriable), retrying in ${delay.toFixed(0)}ms...`,
         error,
       );
-      await new Promise((resolve) => setTimeout(resolve, delay));
+      try {
+        await sleep(delay, signal);
+      } catch {
+        throw new Error("Generation cancelled");
+      }
     }
   }
   throw new Error("Max retries exceeded");
@@ -40,7 +70,7 @@ export async function withRetry<T>(
 
 export async function runWithModelFallback<T>(
   ai: GoogleGenAI,
-  contents: any[],
+  contents: AIMessage[],
   config: GenerateContentConfig,
   parser: (text: string) => T,
 ): Promise<T> {
@@ -55,8 +85,8 @@ export async function runWithModelFallback<T>(
       });
 
       return parser(response.text || "{}");
-    } catch (error: any) {
-      console.warn(`Model ${model} failed:`, error.message);
+    } catch (error) {
+      console.warn(`Model ${model} failed:`, error);
       if (model === models[models.length - 1]) throw error;
     }
   }

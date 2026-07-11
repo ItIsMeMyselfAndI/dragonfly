@@ -28,9 +28,16 @@ describe('syncGeneratedData', () => {
     vi.mocked(projectClient.createProjectComponent).mockResolvedValue({ id: 'comp-1' } as any);
     vi.mocked(projectClient.createProjectNode).mockResolvedValue({} as any);
     vi.mocked(projectClient.createProjectEdge).mockResolvedValue({} as any);
+    vi.mocked(projectClient.createProjectSubstitute).mockResolvedValue({} as any);
 
     const specs: GeneratedSpecs = { specs: [] } as any;
-    const bom: GeneratedBOM = { tag: 'IoT', items: [{ id: 'i1', name: 'Comp1' }] } as any;
+    const bom: GeneratedBOM = {
+      tag: 'IoT',
+      items: [{ id: 'i1', name: 'Comp1' }],
+      substitutes: [
+        { originalComponentId: 'comp-0-test-proj', substituteComponentId: 'item-sub-0-test' },
+      ],
+    } as any;
     const flow: GeneratedFlow = { 
         nodes: [{ id: 'Comp1', positionX: 0, positionY: 0 }], 
         edges: [{ sourceId: 'Comp1', targetId: 'Comp1', label: '', type: '' }] 
@@ -44,9 +51,15 @@ describe('syncGeneratedData', () => {
     expect(projectClient.createProject).toHaveBeenCalled();
     expect(storageClient.uploadToStorage).toHaveBeenCalledTimes(1);
     expect(reportClient.createReport).toHaveBeenCalled();
-    expect(inventoryClient.createItem).toHaveBeenCalled();
-    expect(projectClient.createProjectComponent).toHaveBeenCalled();
-    expect(projectClient.createProjectNode).toHaveBeenCalled();
-    expect(projectClient.createProjectEdge).toHaveBeenCalled();
+    expect(inventoryClient.createItemsBatch).toHaveBeenCalled();
+    expect(projectClient.createProjectComponentsBatch).toHaveBeenCalled();
+    expect(projectClient.createProjectNodesBatch).toHaveBeenCalled();
+    expect(projectClient.createProjectEdgesBatch).toHaveBeenCalled();
+    expect(projectClient.createProjectSubstitute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        originalComponentId: 'comp-0-test-proj',
+        substituteComponentId: 'item-sub-0-test',
+      }),
+    );
   });
 });
