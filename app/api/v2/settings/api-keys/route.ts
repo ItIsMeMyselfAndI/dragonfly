@@ -3,7 +3,9 @@ import { getServerUser } from "@/lib/supabase/server";
 import {
   getUserApiKeyState,
   saveUserApiKeys,
+  isUsingOwnKeys,
 } from "@/lib/settings/server";
+import { ensurePromoRead } from "@/lib/apis/notification/mongo/server";
 import { ProviderType } from "@/lib/ai/types";
 
 export async function GET() {
@@ -28,6 +30,9 @@ export async function POST(req: Request) {
   const enabled = body.enabled ?? false;
   try {
     await saveUserApiKeys(user.id, keys, enabled);
+    if (await isUsingOwnKeys(user.id)) {
+      await ensurePromoRead(user.id).catch(() => {});
+    }
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json(

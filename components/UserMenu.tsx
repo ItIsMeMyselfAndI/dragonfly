@@ -65,11 +65,18 @@ export function UserMenu() {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem className={itemClass}>
+          <DropdownMenuItem
+            className={itemClass}
+            onSelect={(e) => {
+              e.preventDefault();
+              setTheme(isDark ? "light" : "dark");
+            }}
+          >
             <Sun />
             <Switch
               checked={isDark}
               onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
+              onClick={(e) => e.stopPropagation()}
               aria-label="Toggle theme"
               className="mx-auto"
             />

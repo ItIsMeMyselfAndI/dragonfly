@@ -19,10 +19,57 @@ import {
   ComponentNodeType,
   ComponentEdgeType,
 } from "../types";
+import { getRequester } from "@/lib/auth/requester";
 
 // --- Helpers ---
 
 type ProjectMetaShape = ProjectMeta;
+
+export class ProjectAccessError extends Error {
+  constructor() {
+    super("Project access denied");
+    this.name = "ProjectAccessError";
+  }
+}
+
+/**
+ * Build the Mongo filter for listing projects: the requester's own projects
+ * plus any shared/public ones. Uses getRequester() which resolves identity
+ * locally (no per-request network call).
+ */
+async function listFilter(): Promise<Record<string, unknown>> {
+  const { id } = await getRequester();
+  return { $or: [{ userId: id }, { isPublic: true }] };
+}
+
+/**
+ * Load a project if the current requester may access it, else null.
+ * `allowPublic` lets shared templates be read/edited by anyone (matching the
+ * pre-personalization behaviour for legacy projects).
+ */
+async function loadAccessibleProject(
+  projectId: string,
+  allowPublic: boolean,
+): Promise<ProjectDocument | null> {
+  const doc = await ProjectModel.findById(projectId).lean<ProjectDocument>();
+  if (!doc) return null;
+  const { id: requesterId } = await getRequester();
+  const isOwner = doc.userId != null && doc.userId === requesterId;
+  if (isOwner) return doc;
+  if (allowPublic && doc.isPublic) return doc;
+  return null;
+}
+
+/** Resolve a parent project from a subdocument id, enforcing access. */
+async function loadAccessibleBySubdoc(
+  field: "nodes" | "edges" | "components" | "substitutes" | "specsReport",
+  subId: string,
+  allowPublic: boolean,
+): Promise<ProjectDocument | null> {
+  const projectId = await findProjectIdBySubdoc(field, subId);
+  if (!projectId) return null;
+  return loadAccessibleProject(projectId, allowPublic);
+}
 
 async function findProjectIdBySubdoc(
   field: "nodes" | "edges" | "components" | "substitutes" | "specsReport",
@@ -77,7 +124,8 @@ async function getJoinedComponents(
 
 export async function getAllProjects(): Promise<ProjectMetaShape[]> {
   await connectToDatabase();
-  const docs = await ProjectModel.find({})
+  const filter = await listFilter();
+  const docs = await ProjectModel.find(filter)
     .sort({ time: -1 })
     .lean<ProjectDocument[]>();
   return docs.map((d) => ({ id: d._id, name: d.name, time: d.time, tag: d.tag }));
@@ -87,7 +135,7 @@ export async function getProjectById(
   id: string,
 ): Promise<ProjectMetaShape | undefined> {
   await connectToDatabase();
-  const doc = await ProjectModel.findById(id).lean<ProjectDocument>();
+  const doc = await loadAccessibleProject(id, true);
   if (!doc) return undefined;
   return { id: doc._id, name: doc.name, time: doc.time, tag: doc.tag };
 }
@@ -96,11 +144,14 @@ export async function createProject(
   project: ProjectMetaShape,
 ): Promise<ProjectMetaShape> {
   await connectToDatabase();
+  const { id: requesterId } = await getRequester();
   await ProjectModel.create({
     _id: project.id,
     name: project.name,
     time: project.time,
     tag: project.tag,
+    userId: requesterId,
+    isPublic: false,
     components: [],
     nodes: [],
     edges: [],
@@ -115,18 +166,23 @@ export async function updateProject(
   updated: Partial<ProjectMetaShape>,
 ): Promise<ProjectMetaShape | undefined> {
   await connectToDatabase();
+  const doc = await loadAccessibleProject(id, true);
+  if (!doc) return undefined;
+
   const set: Record<string, unknown> = {};
   if ("name" in updated) set.name = updated.name;
   if ("time" in updated) set.time = updated.time;
   if ("tag" in updated) set.tag = updated.tag;
 
-  const doc = await ProjectModel.findByIdAndUpdate(id, { $set: set }, { new: true }).lean<ProjectDocument>();
-  if (!doc) return undefined;
-  return { id: doc._id, name: doc.name, time: doc.time, tag: doc.tag };
+  const updatedDoc = await ProjectModel.findByIdAndUpdate(id, { $set: set }, { new: true }).lean<ProjectDocument>();
+  if (!updatedDoc) return undefined;
+  return { id: updatedDoc._id, name: updatedDoc.name, time: updatedDoc.time, tag: updatedDoc.tag };
 }
 
 export async function deleteProject(id: string): Promise<boolean> {
   await connectToDatabase();
+  const doc = await loadAccessibleProject(id, true);
+  if (!doc) return false;
   const result = await ProjectModel.deleteOne({ _id: id });
   return result.deletedCount === 1;
 }
@@ -139,6 +195,8 @@ export async function createNodesBatch(
   await connectToDatabase();
   if (nodes.length === 0) return [];
   const projectId = nodes[0].projectId;
+  const doc = await loadAccessibleProject(projectId, true);
+  if (!doc) throw new ProjectAccessError();
   const mapped = nodes.map((n) => ({
     id: n.id,
     componentId: n.componentId,
@@ -156,7 +214,7 @@ export async function getNodesByProjectId(
   projectId: string,
 ): Promise<ProjectNodeModel[]> {
   await connectToDatabase();
-  const doc = await ProjectModel.findById(projectId).lean<ProjectDocument>();
+  const doc = await loadAccessibleProject(projectId, true);
   if (!doc) return [];
   return doc.nodes.map((n) => ({
     id: n.id,
@@ -172,6 +230,8 @@ export async function createNode(
   projectId: string,
 ): Promise<ProjectNodeModel> {
   await connectToDatabase();
+  const doc = await loadAccessibleProject(projectId, true);
+  if (!doc) throw new ProjectAccessError();
   const created: ProjectNodeModel = {
     id: node.id,
     projectId,
@@ -191,8 +251,9 @@ export async function updateNode(
   updated: Partial<ProjectNodeModel>,
 ): Promise<ProjectNodeModel | undefined> {
   await connectToDatabase();
-  const projectId = await findProjectIdBySubdoc("nodes", id);
-  if (!projectId) return undefined;
+  const doc = await loadAccessibleBySubdoc("nodes", id, true);
+  if (!doc) return undefined;
+  const projectId = doc._id;
 
   const set: Record<string, unknown> = {};
   if ("componentId" in updated) set["nodes.$[node].componentId"] = updated.componentId;
@@ -205,8 +266,8 @@ export async function updateNode(
     { arrayFilters: [{ "node.id": id }] },
   );
 
-  const doc = await ProjectModel.findById(projectId).lean<ProjectDocument>();
-  const node = doc?.nodes.find((n) => n.id === id);
+  const updatedDoc = await ProjectModel.findById(projectId).lean<ProjectDocument>();
+  const node = updatedDoc?.nodes.find((n) => n.id === id);
   return node
     ? { id: node.id, projectId, componentId: node.componentId, positionX: node.positionX, positionY: node.positionY }
     : undefined;
@@ -214,8 +275,9 @@ export async function updateNode(
 
 export async function deleteNode(id: string): Promise<boolean> {
   await connectToDatabase();
-  const projectId = await findProjectIdBySubdoc("nodes", id);
-  if (!projectId) return false;
+  const doc = await loadAccessibleBySubdoc("nodes", id, true);
+  if (!doc) return false;
+  const projectId = doc._id;
   const result = await ProjectModel.updateOne(
     { _id: projectId },
     { $pull: { nodes: { id } } },
@@ -231,6 +293,8 @@ export async function createEdgesBatch(
   await connectToDatabase();
   if (edges.length === 0) return [];
   const projectId = edges[0].projectId;
+  const doc = await loadAccessibleProject(projectId, true);
+  if (!doc) throw new ProjectAccessError();
   const mapped = edges.map((e) => ({
     id: e.id,
     sourceId: e.sourceId,
@@ -251,7 +315,7 @@ export async function getEdgesByProjectId(
   projectId: string,
 ): Promise<ProjectEdgeModel[]> {
   await connectToDatabase();
-  const doc = await ProjectModel.findById(projectId).lean<ProjectDocument>();
+  const doc = await loadAccessibleProject(projectId, true);
   if (!doc) return [];
   return doc.edges.map((e) => ({
     id: e.id,
@@ -270,6 +334,8 @@ export async function createEdge(
   projectId: string,
 ): Promise<ProjectEdgeModel> {
   await connectToDatabase();
+  const doc = await loadAccessibleProject(projectId, true);
+  if (!doc) throw new ProjectAccessError();
   const created: ProjectEdgeModel = {
     id: edge.id,
     projectId,
@@ -304,8 +370,9 @@ export async function updateEdge(
   updated: Partial<ProjectEdgeModel>,
 ): Promise<ProjectEdgeModel | undefined> {
   await connectToDatabase();
-  const projectId = await findProjectIdBySubdoc("edges", id);
-  if (!projectId) return undefined;
+  const doc = await loadAccessibleBySubdoc("edges", id, true);
+  if (!doc) return undefined;
+  const projectId = doc._id;
 
   const set: Record<string, unknown> = {};
   if ("sourceId" in updated) set["edges.$[edge].sourceId"] = updated.sourceId;
@@ -321,8 +388,8 @@ export async function updateEdge(
     { arrayFilters: [{ "edge.id": id }] },
   );
 
-  const doc = await ProjectModel.findById(projectId).lean<ProjectDocument>();
-  const edge = doc?.edges.find((e) => e.id === id);
+  const updatedDoc = await ProjectModel.findById(projectId).lean<ProjectDocument>();
+  const edge = updatedDoc?.edges.find((e) => e.id === id);
   return edge
     ? {
         id: edge.id,
@@ -339,8 +406,9 @@ export async function updateEdge(
 
 export async function deleteEdge(id: string): Promise<boolean> {
   await connectToDatabase();
-  const projectId = await findProjectIdBySubdoc("edges", id);
-  if (!projectId) return false;
+  const doc = await loadAccessibleBySubdoc("edges", id, true);
+  if (!doc) return false;
+  const projectId = doc._id;
   const result = await ProjectModel.updateOne(
     { _id: projectId },
     { $pull: { edges: { id } } },
@@ -354,7 +422,7 @@ export async function getSubstitutesByProjectId(
   projectId: string,
 ): Promise<ProjectSubstituteModel[]> {
   await connectToDatabase();
-  const doc = await ProjectModel.findById(projectId).lean<ProjectDocument>();
+  const doc = await loadAccessibleProject(projectId, true);
   if (!doc) return [];
   return doc.substitutes.map((s) => ({
     id: s.id,
@@ -368,6 +436,8 @@ export async function createSubstitute(
   substitute: ProjectSubstituteModel,
 ): Promise<ProjectSubstituteModel> {
   await connectToDatabase();
+  const doc = await loadAccessibleProject(substitute.projectId, true);
+  if (!doc) throw new ProjectAccessError();
   await ProjectModel.updateOne(
     { _id: substitute.projectId },
     {
@@ -389,7 +459,7 @@ export async function getReportByProjectId(
   projectId: string,
 ): Promise<ProjectSpecsReportModel | undefined> {
   await connectToDatabase();
-  const doc = await ProjectModel.findById(projectId).lean<ProjectDocument>();
+  const doc = await loadAccessibleProject(projectId, true);
   if (!doc || !doc.specsReport) return undefined;
   return {
     id: doc.specsReport.id,
@@ -402,6 +472,8 @@ export async function createReport(
   report: ProjectSpecsReportModel,
 ): Promise<ProjectSpecsReportModel> {
   await connectToDatabase();
+  const doc = await loadAccessibleProject(report.projectId, true);
+  if (!doc) throw new ProjectAccessError();
   await ProjectModel.updateOne(
     { _id: report.projectId },
     { $set: { specsReport: { id: report.id, url: report.url } } },
@@ -414,23 +486,25 @@ export async function updateReport(
   updated: Partial<ProjectSpecsReportModel>,
 ): Promise<ProjectSpecsReportModel | undefined> {
   await connectToDatabase();
-  const projectId = await findProjectIdBySubdoc("specsReport", id);
-  if (!projectId) return undefined;
+  const doc = await loadAccessibleBySubdoc("specsReport", id, true);
+  if (!doc) return undefined;
+  const projectId = doc._id;
 
   const set: Record<string, unknown> = {};
   if ("url" in updated) set["specsReport.url"] = updated.url;
 
   await ProjectModel.updateOne({ _id: projectId }, { $set: set });
 
-  const doc = await ProjectModel.findById(projectId).lean<ProjectDocument>();
-  if (!doc || !doc.specsReport) return undefined;
-  return { id: doc.specsReport.id, projectId, url: doc.specsReport.url };
+  const updatedDoc = await ProjectModel.findById(projectId).lean<ProjectDocument>();
+  if (!updatedDoc || !updatedDoc.specsReport) return undefined;
+  return { id: updatedDoc.specsReport.id, projectId, url: updatedDoc.specsReport.url };
 }
 
 export async function deleteReport(id: string): Promise<boolean> {
   await connectToDatabase();
-  const projectId = await findProjectIdBySubdoc("specsReport", id);
-  if (!projectId) return false;
+  const doc = await loadAccessibleBySubdoc("specsReport", id, true);
+  if (!doc) return false;
+  const projectId = doc._id;
   const result = await ProjectModel.updateOne(
     { _id: projectId },
     { $set: { specsReport: null } },
@@ -444,6 +518,8 @@ export async function getComponentsByProjectId(
   projectId: string,
 ): Promise<ProjectComponentModel[]> {
   await connectToDatabase();
+  const doc = await loadAccessibleProject(projectId, true);
+  if (!doc) return [];
   return getJoinedComponents(projectId);
 }
 
@@ -453,6 +529,8 @@ export async function createComponentsBatch(
   await connectToDatabase();
   if (components.length === 0) return [];
   const projectId = components[0].projectId;
+  const doc = await loadAccessibleProject(projectId, true);
+  if (!doc) throw new ProjectAccessError();
   const mapped = components.map((c) => ({
     id: c.id,
     inventoryId: c.inventoryId,
@@ -471,6 +549,8 @@ export async function createComponent(
   component: ProjectComponentModel,
 ): Promise<ProjectComponentModel> {
   await connectToDatabase();
+  const doc = await loadAccessibleProject(component.projectId, true);
+  if (!doc) throw new ProjectAccessError();
   await ProjectModel.updateOne(
     { _id: component.projectId },
     {
@@ -494,8 +574,9 @@ export async function updateComponent(
   updated: Partial<ProjectComponentModel>,
 ): Promise<ProjectComponentModel | undefined> {
   await connectToDatabase();
-  const projectId = await findProjectIdBySubdoc("components", id);
-  if (!projectId) return undefined;
+  const doc = await loadAccessibleBySubdoc("components", id, true);
+  if (!doc) return undefined;
+  const projectId = doc._id;
 
   const set: Record<string, unknown> = {};
   if ("inventoryId" in updated) set["components.$[comp].inventoryId"] = updated.inventoryId;
@@ -515,8 +596,9 @@ export async function updateComponent(
 
 export async function deleteComponent(id: string): Promise<boolean> {
   await connectToDatabase();
-  const projectId = await findProjectIdBySubdoc("components", id);
-  if (!projectId) return false;
+  const doc = await loadAccessibleBySubdoc("components", id, true);
+  if (!doc) return false;
+  const projectId = doc._id;
   const result = await ProjectModel.updateOne(
     { _id: projectId },
     { $pull: { components: { id } } },

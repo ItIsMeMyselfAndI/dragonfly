@@ -67,6 +67,8 @@ export interface ProjectModel {
   name: string;
   time: string;
   tag: ProjectTagEnum;
+  userId?: string | null;
+  isPublic?: boolean;
 }
 
 export interface ProjectNodeModel extends ComponentNodeType {

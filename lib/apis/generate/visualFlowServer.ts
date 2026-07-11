@@ -90,6 +90,7 @@ export async function generateVisualFlowLogic(
     9. SOURCE AND TARGET ID CONSISTENCY: For each edge, the 'sourceId' and 'targetId' must reference the corresponding node IDs in the format 'node-{index}-{projectId}' to ensure proper linkage between nodes and edges.
     10. PROJECT ID: Here is the project ID for reference: ${projectId}.
     11. COMPONENT ID: Each node's 'componentId' must match the corresponding IDs from the components, not the items, from the BOM CONTEXT to ensure accurate mapping between nodes and components.
+    12. PROJECT NAME: Populate the 'name' field with a concise, Title-Case project title (2-5 words) that captures what the system does, e.g. 'Line-Following Robot' or 'Weather Station'. Never copy the user's prompt or the image description verbatim — always invent a clean, human-friendly title, even when a text prompt is provided.
     `,
     responseMimeType: "application/json",
     responseSchema: VisualFlowSchema,

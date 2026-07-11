@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
 export interface UserProfile {
@@ -31,6 +32,7 @@ interface AuthStore {
   isGuest: boolean;
   hasPassword: boolean;
   loading: boolean;
+  sessionVersion: number;
   refreshProfile: () => Promise<void>;
 }
 
@@ -47,10 +49,15 @@ function computeHasPassword(u: {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [hasPassword, setHasPassword] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  // Bumped on every auth change (login / logout / switch account) so that
+  // downstream providers and components can wipe + refetch identity-scoped
+  // state. This is the single signal that the "current person" changed.
+  const [sessionVersion, setSessionVersion] = useState(0);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
@@ -86,13 +93,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setHasPassword(false);
       }
+      // A different identity is now active: bump the version so every
+      // identity-scoped provider/component resets, and re-render Server
+      // Components under the new requester.
+      setSessionVersion((v) => v + 1);
+      router.refresh();
     });
 
     return () => {
       active = false;
       sub.subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, router]);
 
   const refreshProfile = useCallback(async () => {
     if (!user) return;
@@ -106,9 +118,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isGuest: !user,
       hasPassword,
       loading,
+      sessionVersion,
       refreshProfile,
     }),
-    [user, profile, hasPassword, loading, refreshProfile],
+    [user, profile, hasPassword, loading, sessionVersion, refreshProfile],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -118,4 +131,10 @@ export function useAuth() {
   const v = useContext(Ctx);
   if (!v) throw new Error("useAuth must be used within AuthProvider");
   return v;
+}
+
+export function useSessionVersion() {
+  const v = useContext(Ctx);
+  if (!v) throw new Error("useSessionVersion must be used within AuthProvider");
+  return v.sessionVersion;
 }

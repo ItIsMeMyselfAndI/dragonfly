@@ -35,9 +35,10 @@ export async function generateVisualFlow(
     try {
       const data = (await response.json()) as {
         error?: string;
+        code?: string;
         provider?: string;
       };
-      code = data.error;
+      code = data.code ?? data.error;
       provider = data.provider;
     } catch {
       // ignore parse failures

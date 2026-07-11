@@ -22,6 +22,7 @@ import { useBom } from "@/features/bom/store";
 import { ComponentCard } from "@/features/bom/ComponentCard";
 import { SubstituteSheet } from "@/features/bom/SubstituteSheet";
 import { compatibilityAlerts } from "@/features/bom/data";
+import { useAuth } from "@/features/auth/store";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   getAllProjects,
@@ -137,18 +138,16 @@ export default function BomScreen() {
   const generate = searchParams?.get("generate");
   const prompt = searchParams?.get("prompt");
 
+  const { user } = useAuth();
+  const requesterKey = user?.id ?? "guest";
+
   useEffect(() => {
     async function init() {
       try {
         const data = await getAllProjects();
-        setProjects((prev) => {
-          // Merge backend projects with any dynamic projects already in state
-          const combined = [
-            ...data,
-            ...prev.filter((p) => !data.find((bp) => bp.id === p.id)),
-          ];
-          return combined;
-        });
+        // Replace (don't merge-keep) so a previous user's projects are dropped
+        // when the requester identity changes. Re-runs on auth change.
+        setProjects(data);
 
         if ((generate === "true" || generate === "dynamic") && prompt) {
           const decodedPrompt = decodeURIComponent(prompt);
@@ -161,7 +160,7 @@ export default function BomScreen() {
       }
     }
     init();
-  }, [generate, prompt, projectInfo, loadProject]);
+  }, [generate, prompt, projectInfo, loadProject, requesterKey]);
 
   const handleSelectProject = (projectName: string) => {
     loadProject(projectName);

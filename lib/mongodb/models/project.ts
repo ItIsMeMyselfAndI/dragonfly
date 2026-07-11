@@ -64,6 +64,8 @@ const ProjectSchema = new Schema(
     name: { type: String, required: true },
     time: { type: String, required: true },
     tag: { type: String, enum: Object.values(ProjectTagEnum), required: true },
+    userId: { type: String, required: false, index: true },
+    isPublic: { type: Boolean, default: false, index: true },
     components: { type: [ProjectComponentSchema], default: [] },
     nodes: { type: [ProjectNodeSchema], default: [] },
     edges: { type: [ProjectEdgeSchema], default: [] },
@@ -75,6 +77,7 @@ const ProjectSchema = new Schema(
 
 ProjectSchema.index({ tag: 1 });
 ProjectSchema.index({ "components.inventoryId": 1 });
+ProjectSchema.index({ userId: 1, isPublic: 1 });
 
 export type ProjectDocument = mongoose.InferSchemaType<typeof ProjectSchema>;
 

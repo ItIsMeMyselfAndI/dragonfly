@@ -6,7 +6,8 @@ export const VisualFlowSchema: Schema = {
   properties: {
     name: {
       type: Type.STRING,
-      description: "The name of the generated visual flow diagram.",
+      description:
+        "A concise, Title-Case project title (2-5 words) summarizing the system, e.g. 'Line-Following Robot'. Do NOT copy the user's prompt or image description verbatim.",
     },
     tag: {
       type: Type.STRING,

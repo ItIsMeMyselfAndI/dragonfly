@@ -50,7 +50,7 @@ import {
 } from "@/features/visual-flow/CustomNode";
 import { toast } from "sonner";
 import { useFlow } from "@/features/visual-flow/store";
-import { ProjectModel } from "@/lib/apis/project/types";
+import { useAuth } from "@/features/auth/store";
 
 const nodeTypes = { custom: CustomNode };
 
@@ -70,32 +70,29 @@ export default function FlowScreen() {
     setProjects,
   } = useFlow();
 
+  const { user } = useAuth();
+  const requesterKey = user?.id ?? "guest";
+
   const [selected, setSelected] = useState<ComponentNode | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
 
-  // Fetch initial project and component lists
+  // Fetch initial project and component lists. Re-runs whenever the requester
+  // identity changes (login / logout) so a different user's projects are never
+  // shown. The list is replaced (not merged) to drop any projects the server
+  // no longer returns for this requester.
   useEffect(() => {
     Promise.all([getAllProjects(), getAllItems()])
       .then(([projs, inv]) => {
-        setProjects((prev: ProjectModel[]) => {
-          const newProjects: ProjectModel[] = [
-            ...projs,
-            ...prev.filter(
-              (p: ProjectModel) =>
-                !projs.find((bp: ProjectModel) => bp.id === p.id),
-            ),
-          ];
-          return newProjects;
-        });
+        setProjects(projs);
         setInventory(inv);
         if (projs.length > 0 && !currentProject) {
           setCurrentProject(projs[0]);
         }
       })
       .catch((err) => console.error("Failed to load initial data:", err));
-  }, [setProjects, setInventory, setCurrentProject]); // Removed currentProject from deps to prevent reset loop
+  }, [requesterKey, setProjects, setInventory, setCurrentProject]); // Removed currentProject from deps to prevent reset loop
 
   // Fetch nodes, edges and components whenever the active project changes
   useEffect(() => {
