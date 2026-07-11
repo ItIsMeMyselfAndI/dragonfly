@@ -3,6 +3,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/apis/project/client";
 import { getReportsByProjectId } from "@/lib/apis/project/reportClient";
 import { GeneratedSpecs } from "@/lib/apis/generate/types";
+import { useSessionVersion } from "@/features/auth/store";
 
 interface BomStore {
   components: ProjectComponentModel[];
@@ -119,6 +121,17 @@ export function BomProvider({ children }: { children: ReactNode }) {
     setSpecs(null);
     setPdfReport(null);
   }, []);
+
+  // The active identity changed (login / logout / switch account). The cached
+  // BOM, specs, PDF and history belong to a different person and must be wiped
+  // so the next user starts from a clean slate. sessionVersion is the single
+  // signal driven by AuthProvider.
+  const sessionVersion = useSessionVersion();
+  useEffect(() => {
+    if (sessionVersion === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    clearProject();
+  }, [sessionVersion, clearProject]);
 
   const pushToCart = useCallback(
     (summary: Omit<ProjectCartSummary, "totalPrice">) => {

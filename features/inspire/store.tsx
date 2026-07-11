@@ -39,7 +39,7 @@ import {
   RateLimitStatus,
 } from "@/lib/rate-limit/client";
 import { useSettings } from "@/features/settings/store";
-import { useAuth } from "@/features/auth/store";
+import { useSessionVersion } from "@/features/auth/store";
 import { toast } from "sonner";
 
 const USE_MOCK_DATA = false; // Toggle here
@@ -93,7 +93,6 @@ export function InspireProvider({ children }: { children: ReactNode }) {
     null,
   );
   const { defaultProvider, defaultModel } = useSettings();
-  const { user } = useAuth();
   const cancelledRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -106,12 +105,18 @@ export function InspireProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Refresh the rate limit status when auth state changes (sign in/out),
-  // since the allowance differs for guests vs signed-in users.
+  const sessionVersion = useSessionVersion();
+
+  // The identity changed (login / logout / switch account): refresh the rate
+  // limit allowance (it differs for guests vs signed-in users) and clear any
+  // in-progress prompt / uploaded files so they don't leak to the next person.
   useEffect(() => {
+    if (sessionVersion === 0) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPromptState("");
+    setSelectedFilesState([]);
     fetchRateLimitStatus();
-  }, [user?.id, fetchRateLimitStatus]);
+  }, [sessionVersion, fetchRateLimitStatus]);
 
   const addFile = useCallback((file: File) => {
     const preview = URL.createObjectURL(file);
@@ -324,8 +329,19 @@ export function InspireProvider({ children }: { children: ReactNode }) {
           // Swallow it without logging — it is an expected, user-initiated stop.
           return;
         }
-        console.error(e);
+
+        // API-key errors can arrive as either the explicit server code or the
+        // upstream Google message, so check both.
+        const isApiKeyError =
+          (e instanceof GenerationError &&
+            (e.code === "API_KEY_INVALID" ||
+              /api[ _-]?key (is )?(not valid|invalid)/i.test(e.code ?? ""))) ||
+          /api[ _-]?key (is )?(not valid|invalid)/i.test(
+            e instanceof Error ? e.message : "",
+          );
+
         if (e instanceof GenerationError && e.code === "PROVIDER_UNAVAILABLE") {
+          // The persistent toast is the only UX — no console noise.
           toast.error(
             "Your default provider is unavailable. Add your own API keys or choose another provider.",
             {
@@ -339,9 +355,26 @@ export function InspireProvider({ children }: { children: ReactNode }) {
           );
           return;
         }
+        if (isApiKeyError) {
+          // The persistent toast is the only UX — no console noise, no rethrow.
+          toast.error(
+            "Your API key is invalid. Check your API keys to keep generating.",
+            {
+              duration: Infinity,
+              closeButton: true,
+              action: {
+                label: "Open settings",
+                onClick: () => router.push("/settings?section=keys"),
+              },
+            },
+          );
+          return;
+        }
+
         // Whole-pipeline failure: retries exhausted, model fallback failed,
-        // or another unrecoverable AI error. Surface a clear toast — the page
-        // tip is shown separately from the re-thrown error.
+        // or another unrecoverable AI error. Surface a clear toast, log it,
+        // and re-throw so the page tip can react.
+        console.error(e);
         const pipelineMessage =
           e instanceof Error && e.message === "Max retries exceeded"
             ? "Generation failed after multiple attempts. Please try again."
@@ -360,7 +393,7 @@ export function InspireProvider({ children }: { children: ReactNode }) {
         setLoadingTextState("Generating...");
       }
     },
-    [prompt, selectedFiles, defaultProvider, defaultModel, fetchRateLimitStatus, rateLimitStatus],
+    [prompt, selectedFiles, defaultProvider, defaultModel, fetchRateLimitStatus],
   );
 
   const value = useMemo<InspireStore>(
@@ -384,6 +417,7 @@ export function InspireProvider({ children }: { children: ReactNode }) {
       selectedFiles,
       isLoading,
       loadingText,
+      isCancelling,
       rateLimitStatus,
       addFile,
       removeFile,

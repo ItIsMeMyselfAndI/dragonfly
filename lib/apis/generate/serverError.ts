@@ -7,6 +7,14 @@ import { NextResponse } from "next/server";
  *   - other 4xx (bad key, invalid model)     -> 400 (do NOT retry)
  *   - unknown (network/generic)              -> 500 (retriable, best effort)
  */
+function isApiKeyError(error: unknown): boolean {
+  const text = error instanceof Error ? error.message : String(error);
+  return (
+    /api[ _-]?key (is )?(not valid|invalid)/i.test(text) ||
+    text.includes("API_KEY_INVALID")
+  );
+}
+
 export function generationErrorResponse(error: unknown): NextResponse {
   const message =
     error instanceof Error ? error.message : "Generation failed";
@@ -21,8 +29,7 @@ export function generationErrorResponse(error: unknown): NextResponse {
     }
   }
 
-  return NextResponse.json(
-    { error: message, code: "GENERATION_FAILED" },
-    { status: httpStatus },
-  );
+  const code = isApiKeyError(error) ? "API_KEY_INVALID" : "GENERATION_FAILED";
+
+  return NextResponse.json({ error: message, code }, { status: httpStatus });
 }
