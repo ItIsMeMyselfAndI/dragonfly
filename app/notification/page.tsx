@@ -23,11 +23,11 @@ export default function NotificationPage() {
           </span>
           <div className="flex-1">
             <p className="text-sm font-medium">
-              Unlock 10 generations per day
+              Unlock 5 generations per day
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               You're on the guest plan (3 per day). Create a free account to
-              raise your limit to 10 generations per day.
+              raise your limit to 5 generations per day.
             </p>
             <Button
               className="mt-3"
