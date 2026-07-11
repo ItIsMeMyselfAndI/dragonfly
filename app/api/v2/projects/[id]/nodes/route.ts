@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   getNodesByProjectId,
   createNode,
-} from "@/lib/apis/project/supabase/server";
+} from "@/lib/apis/project/mongo/server";
 
 type Params = Promise<{ id: string }>;
 

@@ -1,8 +1,30 @@
-import { GoogleGenAI } from "@google/genai";
-import { getNextApiKey } from "./keyCycler";
-import { runWithModelFallback } from "./utils";
+import { AIMessage, AIConfig } from "@/lib/ai/aiService";
+import { ProviderType } from "@/lib/ai/types";
+import { ProviderConfigManager } from "@/lib/ai/providerConfig";
+import { ImageProcessor } from "@/lib/ai/imageProcessor";
+import { GeminiGenAIProvider } from "@/lib/ai/providers/geminiGenAIProvider";
+import { OpenAIProvider } from "@/lib/ai/providers/openaiProvider";
+import { OpenRouterProvider } from "@/lib/ai/providers/openrouterProvider";
+import { ChatGPTProvider } from "@/lib/ai/providers/chatgptProvider";
 import { GeneratedFlow } from "./types";
 import { VisualFlowSchema } from "./visualFlowSchema";
+
+const providerConfig = new ProviderConfigManager();
+
+function createProvider(providerType: ProviderType, apiKey: string) {
+  switch (providerType) {
+    case ProviderType.GEMINI:
+      return new GeminiGenAIProvider(apiKey);
+    case ProviderType.OPENAI:
+      return new OpenAIProvider(apiKey);
+    case ProviderType.OPENROUTER:
+      return new OpenRouterProvider(apiKey);
+    case ProviderType.CHATGPT:
+      return new ChatGPTProvider(apiKey);
+    default:
+      return new GeminiGenAIProvider(apiKey);
+  }
+}
 
 export async function generateVisualFlowLogic(
   bomComponentsContext: string,
@@ -10,25 +32,30 @@ export async function generateVisualFlowLogic(
   prompt: string | null,
   image: File | null,
   projectId: string,
+  providerType: ProviderType = ProviderType.GEMINI,
+  model?: string,
+  userApiKey?: string,
 ): Promise<GeneratedFlow> {
-  const ai = new GoogleGenAI({ apiKey: getNextApiKey() });
-
-  const contents = [];
+  const contents: AIMessage[] = [];
   if (image) {
-    const buffer = Buffer.from(await image.arrayBuffer());
+    const { data, mimeType } = await ImageProcessor.toBase64(image);
     contents.push({
-      inlineData: {
-        data: buffer.toString("base64"),
-        mimeType: image.type,
-      },
+      role: "user",
+      content: "",
+      inlineData: { data, mimeType },
     });
   }
   if (prompt) {
-    contents.push({ text: prompt });
+    contents.push({
+      role: "user",
+      content: prompt,
+    });
   }
+
   contents.push({
-    text: `Based on the following Bill of Materials (BOM) and specs calculation, generate a visual signal and power flow diagram.
-    
+    role: "user",
+    content: `Based on the following Bill of Materials (BOM) and specs calculation, generate a visual signal and power flow diagram.
+
     BOM COMPONENTS CONTEXT:
     {
     ${bomComponentsContext}
@@ -41,11 +68,15 @@ export async function generateVisualFlowLogic(
     `,
   });
 
-  const generatedFlow = await runWithModelFallback(
-    ai,
-    contents,
-    {
-      systemInstruction: `You are an expert System Architect. Your task is to generate a visual BLOCK DIAGRAM showing the signal and power flow of a system based on the provided Bill of Materials.
+  const apiKey =
+    userApiKey && userApiKey.trim()
+      ? userApiKey
+      : providerConfig.getNextKey(providerType);
+  const provider = createProvider(providerType, apiKey);
+
+  const config: AIConfig = {
+    model: model ?? "gemini-2.5-flash-lite",
+    systemInstruction: `You are an expert System Architect. Your task is to generate a visual BLOCK DIAGRAM showing the signal and power flow of a system based on the provided Bill of Materials.
 
     CRITICAL INSTRUCTIONS:
     1. BLOCK DIAGRAM ONLY: Do NOT generate a circuit diagram. Do NOT create closed-loop circuits or cyclic feedback paths. The diagram must represent a unidirectional functional flow (e.g., Sensor -> MCU -> Actuator).
@@ -60,11 +91,15 @@ export async function generateVisualFlowLogic(
     10. PROJECT ID: Here is the project ID for reference: ${projectId}.
     11. COMPONENT ID: Each node's 'componentId' must match the corresponding IDs from the components, not the items, from the BOM CONTEXT to ensure accurate mapping between nodes and components.
     `,
-      responseMimeType: "application/json",
-      responseSchema: VisualFlowSchema,
-    },
+    responseMimeType: "application/json",
+    responseSchema: VisualFlowSchema,
+  };
+
+  const response = await provider.generate(
+    contents,
+    config,
     (text) => JSON.parse(text || "{}") as GeneratedFlow,
   );
 
-  return generatedFlow;
+  return response.data;
 }

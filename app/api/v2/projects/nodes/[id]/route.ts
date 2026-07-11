@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { updateNode, deleteNode } from "@/lib/apis/project/supabase/server";
+import { updateNode, deleteNode } from "@/lib/apis/project/mongo/server";
 
 type Params = Promise<{ id: string }>;
 

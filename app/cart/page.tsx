@@ -16,6 +16,7 @@ import {
 import { categoryIcons } from "@/lib/apis/project/constants";
 import { ProjectCost } from "@/components/ProjectCost";
 import { useCart } from "@/features/cart/store";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function CartScreen() {
   const { pushedHistory, moveToLastCart } = useBom();
@@ -30,35 +31,31 @@ export default function CartScreen() {
 
   if (!lastCart) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 px-5 pt-14 pb-48 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-surface/60 text-muted-foreground">
-          <ShoppingCart size={40} />
+      <div className="flex h-full flex-col gap-4 px-5 pt-2 pb-48">
+        <PageHeader trail={[{ label: "Cart" }]} />
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-surface/60 text-muted-foreground">
+            <ShoppingCart size={40} />
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">Cart empty</h1>
+          <p className="text-sm text-muted-foreground">
+            Push a project from the BOM manager to get started.
+          </p>
+          <Link
+            href="/bom"
+            className="mt-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
+          >
+            Go to BOM Manager
+          </Link>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">Cart empty</h1>
-        <p className="text-sm text-muted-foreground">
-          Push a project from the BOM manager to get started.
-        </p>
-        <Link
-          href="/bom"
-          className="mt-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
-        >
-          Go to BOM Manager
-        </Link>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-14 pb-48">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Distributor
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            Cart pushed
-          </h1>
-        </div>
+    <div className="flex flex-col gap-5 px-5 pt-2 pb-48">
+      <header className="flex items-center justify-between gap-4">
+        <PageHeader trail={[{ label: "Cart" }]} />
         <Button
           variant="outline"
           size="sm"

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ListChecks, GitBranch, ShoppingBag } from "lucide-react";
 import { useSheet } from "@/lib/sheet-context";
+import { useNavigate } from "@/components/navigation/NavigationGuard";
 
 const tabs = [
   { href: "/", label: "Inspire", icon: Sparkles },
@@ -16,6 +17,7 @@ const tabs = [
 export function BottomNav() {
   const pathname = usePathname();
   const { isSheetOpen } = useSheet();
+  const navigate = useNavigate();
 
   return (
     <AnimatePresence>
@@ -33,6 +35,10 @@ export function BottomNav() {
                 <Link
                   key={href}
                   href={href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(href);
+                  }}
                   className={`relative flex flex-col items-center justify-center transition-all duration-300 ${
                     active ? "-mt-6" : "h-12 w-12"
                   }`}

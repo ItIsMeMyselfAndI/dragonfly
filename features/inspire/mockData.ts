@@ -108,6 +108,7 @@ export const getMockData = (projectId: string) => {
           },
         },
       ],
+      substitutes: [],
       alerts: [],
     },
     flowResult: {

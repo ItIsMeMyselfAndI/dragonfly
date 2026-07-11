@@ -36,6 +36,7 @@ import {
   type ProjectModel,
 } from "@/lib/apis/project/types";
 import { ProjectCost } from "@/components/ProjectCost";
+import { PageHeader } from "@/components/PageHeader";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { StockStatus } from "@/lib/apis/inventory/types";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,7 @@ function ProjectItem({
       className="group flex items-center justify-between rounded-2xl bg-surface/60 p-4 ring-1 ring-white/5 transition-all hover:bg-surface-elevated hover:ring-primary/40 hover:shadow-[0_0_20px_-5px_var(--primary)]"
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
           {(() => {
             const Icon = categoryIcons[project.tag] || Zap;
             return <Icon size={18} />;
@@ -168,15 +169,8 @@ export default function BomScreen() {
 
   if (!projectInfo) {
     return (
-      <div className="flex flex-col gap-6 px-5 pt-14 pb-48">
-        <header>
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            BOM Manager
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            Select Project
-          </h1>
-        </header>
+      <div className="flex flex-col gap-6 px-5 pt-2 pb-48">
+        <PageHeader trail={[{ label: "BOM" }]} />
         <div className="flex flex-col gap-3">
           {projects.map((p) => (
             <ProjectItem
@@ -289,9 +283,9 @@ export default function BomScreen() {
 
   return (
     <>
-      <div className="flex flex-col gap-4 px-5 pt-14 pb-48">
+      <div className="flex flex-col gap-4 px-5 pt-2 pb-48">
         <header className="flex items-start justify-between gap-4">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <button
               onClick={() => clearProject()}
               className="mb-2 flex items-center gap-1 rounded-full border border-white/10 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
@@ -299,12 +293,13 @@ export default function BomScreen() {
               <ArrowRight size={12} className="rotate-180" />
               Back
             </button>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Project
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-              {projectInfo.name}
-            </h1>
+            <PageHeader
+              trail={[
+                { label: "BOM", href: "/bom" },
+                { label: projectInfo.name },
+              ]}
+              showBack={false}
+            />
             <p className="mt-1 text-xs text-muted-foreground">
               {components.length} components · {itemCount} units
             </p>

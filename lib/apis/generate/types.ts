@@ -39,6 +39,7 @@ export interface GeneratedSpecs {
 export interface GeneratedBOM {
   items: ItemModel[];
   components: ProjectComponentModel[];
+  substitutes: Array<{ originalComponentId: string; substituteComponentId: string }>;
   alerts: BomAlert[];
   tag: ProjectTagEnum;
 }

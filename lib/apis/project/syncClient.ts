@@ -3,6 +3,7 @@ import {
   createProjectComponentsBatch,
   createProjectEdgesBatch,
   createProjectNodesBatch,
+  createProjectSubstitute,
 } from "./client";
 import { createItemsBatch } from "../inventory/client";
 import { createItemDetailsBatch } from "../inventory/detailsClient";
@@ -82,6 +83,18 @@ export async function syncGeneratedData(
     projectId,
     bomResult.components,
   );
+
+  // 4b. Save Substitutes (alternative inventory items, referenced by id)
+  if (bomResult.substitutes?.length) {
+    for (const sub of bomResult.substitutes) {
+      await createProjectSubstitute({
+        id: `sub-${sub.originalComponentId}-${sub.substituteComponentId}`,
+        projectId,
+        originalComponentId: sub.originalComponentId,
+        substituteComponentId: sub.substituteComponentId,
+      });
+    }
+  }
 
   // 5. Save Visual Flow Nodes
   const nodes = flowResult.nodes

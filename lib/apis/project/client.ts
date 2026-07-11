@@ -14,7 +14,10 @@ const API_BASE = "/api/v2/projects";
 
 export async function getAllProjects(): Promise<ProjectModel[]> {
   const res = await fetch(API_BASE);
-  if (!res.ok) throw new Error("Failed to fetch projects");
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || `Failed to fetch projects (${res.status})`);
+  }
   return res.json();
 }
 
@@ -177,6 +180,18 @@ export async function getProjectSubstitutes(
 ): Promise<ProjectSubstituteModel[]> {
   const res = await fetch(`${API_BASE}/${projectId}/substitutes`);
   if (!res.ok) throw new Error("Failed to fetch project substitutes");
+  return res.json();
+}
+
+export async function createProjectSubstitute(
+  substitute: ProjectSubstituteModel,
+): Promise<ProjectSubstituteModel> {
+  const res = await fetch(`${API_BASE}/${substitute.projectId}/substitutes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(substitute),
+  });
+  if (!res.ok) throw new Error("Failed to create project substitute");
   return res.json();
 }
 

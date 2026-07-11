@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAllProjects, createProject } from '@/lib/apis/project/supabase/server';
+import { getAllProjects, createProject } from '@/lib/apis/project/mongo/server';
 
 export async function GET() {
   try {

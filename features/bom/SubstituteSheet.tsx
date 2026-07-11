@@ -125,26 +125,6 @@ export function SubstituteSheet({
         ? explicitSubs
         : compatibleSubs;
 
-  useEffect(() => {
-    if (subs.length === 1 && component) {
-      swap(component.id, {
-        id: component.id,
-        projectId: component.projectId,
-        inventoryId: subs[0].id,
-        name: subs[0].name,
-        partNumber: subs[0].partNumber,
-        shortDesc: subs[0].shortDesc,
-        unitPrice: subs[0].unitPrice,
-        stock: StockStatus.IN_STOCK,
-        stockCount: 8400,
-        category: component.category,
-        pins: component.pins,
-        details: subs[0].details,
-      });
-      onClose();
-    }
-  }, [subs, component, swap, onClose]);
-
   const { setIsSheetOpen } = useSheet();
 
   useEffect(() => {
