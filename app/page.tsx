@@ -6,14 +6,7 @@ import {
   Sparkles,
   Upload,
   Wand2,
-  Zap,
-  Clock,
-  Bot,
-  Wifi,
-  Network,
-  Cpu,
   Loader2,
-  HelpCircle,
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -21,9 +14,9 @@ import { useBom } from "@/features/bom/store";
 import { useFlow } from "@/features/visual-flow/store";
 import Link from "next/link";
 import Image from "next/image";
-import { cn, formatRelativeTime } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { getAllProjects } from "@/lib/apis/project/client";
-import { ProjectCost } from "@/components/ProjectCost";
+import { ProjectCard } from "@/components/ProjectCard";
 import { ProjectModel } from "@/lib/apis/project/types";
 import {
   Dialog,
@@ -35,15 +28,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { useInspire } from "@/features/inspire/store";
 import { useAuth } from "@/features/auth/store";
-
-const categoryIcons: Record<string, typeof Bot> = {
-  Robotics: Bot,
-  IoT: Wifi,
-  Networking: Network,
-  Mechatronics: Cpu,
-  Power: Zap,
-  "N/A": HelpCircle,
-};
 
 const suggestions = [
   "5V line-following robot with a higher voltage buzzer",
@@ -401,34 +385,11 @@ export default function Home() {
           ) : projects.length === 0 ? (
             <p className="text-sm text-muted-foreground">No recent projects yet.</p>
           ) : projects.map((p) => (
-            <Link
+            <ProjectCard
               key={p.id}
-              href={`/bom?generate=dynamic&prompt=${encodeURIComponent(p.name)}`}
-              className="flex items-center justify-between rounded-2xl bg-surface/60 p-4 ring-1 ring-white/5 transition-colors hover:bg-surface-elevated"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  {(() => {
-                    const Icon = categoryIcons[p.tag] || Zap;
-                    return <Icon size={18} />;
-                  })()}
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium">{p.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    <ProjectCost project={p} />
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                  {p.tag}
-                </span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock size={12} /> {formatRelativeTime(p.time)}
-                </span>
-              </div>
-            </Link>
+              project={p}
+              href={`/bom/${p.id}`}
+            />
           ))}
         </div>
       </section>

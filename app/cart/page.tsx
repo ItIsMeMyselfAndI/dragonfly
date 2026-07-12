@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { categoryIcons } from "@/lib/apis/project/constants";
 import { ProjectCost } from "@/components/ProjectCost";
+import { ProjectTagBadge } from "@/components/ProjectTagBadge";
 import { useCart } from "@/features/cart/store";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -75,9 +76,7 @@ export default function CartScreen() {
           <span className="text-sm font-semibold text-foreground">
             {lastCart.name}
           </span>
-          <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {lastCart.tag}
-          </span>
+          <ProjectTagBadge tag={lastCart.tag} />
         </div>
       </div>
 
