@@ -51,6 +51,7 @@ import {
 import { toast } from "sonner";
 import { useFlow } from "@/features/visual-flow/store";
 import { useAuth } from "@/features/auth/store";
+import { useSearchParams } from "next/navigation";
 
 const nodeTypes = { custom: CustomNode };
 
@@ -72,6 +73,7 @@ export default function FlowScreen() {
 
   const { user } = useAuth();
   const requesterKey = user?.id ?? "guest";
+  const searchParams = useSearchParams();
 
   const [selected, setSelected] = useState<ComponentNode | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -79,20 +81,30 @@ export default function FlowScreen() {
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
 
   // Fetch initial project and component lists. Re-runs whenever the requester
-  // identity changes (login / logout) so a different user's projects are never
-  // shown. The list is replaced (not merged) to drop any projects the server
-  // no longer returns for this requester.
+  // identity changes (login / logout) or the URL search params change (so a
+  // ?projectId=xxx link from another page selects the correct project).
   useEffect(() => {
     Promise.all([getAllProjects(), getAllItems()])
       .then(([projs, inv]) => {
         setProjects(projs);
         setInventory(inv);
-        if (projs.length > 0 && !currentProject) {
+        if (projs.length === 0) return;
+
+        const projectIdFromUrl = searchParams.get("projectId");
+        if (projectIdFromUrl) {
+          const target = projs.find((p) => p.id === projectIdFromUrl);
+          if (target) {
+            setCurrentProject(target);
+            return;
+          }
+        }
+
+        if (!currentProject) {
           setCurrentProject(projs[0]);
         }
       })
       .catch((err) => console.error("Failed to load initial data:", err));
-  }, [requesterKey, setProjects, setInventory, setCurrentProject]); // Removed currentProject from deps to prevent reset loop
+  }, [requesterKey, setProjects, setInventory, setCurrentProject, searchParams]);
 
   // Fetch nodes, edges and components whenever the active project changes
   useEffect(() => {
