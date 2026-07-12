@@ -16,11 +16,13 @@ import {
 import { BomAlert } from "./data";
 import {
   getAllProjects,
+  getProject,
   getProjectComponents,
 } from "@/lib/apis/project/client";
 import { getReportsByProjectId } from "@/lib/apis/project/reportClient";
 import { GeneratedSpecs } from "@/lib/apis/generate/types";
 import { useSessionVersion } from "@/features/auth/store";
+import { toast } from "sonner";
 
 interface BomStore {
   components: ProjectComponentModel[];
@@ -31,7 +33,15 @@ interface BomStore {
   pdfReport: Blob | null; // Added
   total: number;
   itemCount: number;
-  projectInfo: { name: string; tag: ProjectTagEnum } | null;
+  projectInfo: {
+    id?: string;
+    name: string;
+    tag: ProjectTagEnum;
+    isPublic?: boolean;
+    isOwner?: boolean;
+    authorAlias?: string;
+  } | null;
+  canEdit: boolean;
   pushedHistory: ProjectCartSummary[];
   setQty: (id: string, qty: number) => void;
   remove: (id: string) => void;
@@ -40,10 +50,12 @@ interface BomStore {
   commitChanges: () => void;
   clearProject: () => void;
   loadProject: (projectName: string) => Promise<void>;
+  loadProjectById: (id: string) => Promise<void>;
   loadDynamicProject: (
     projectName: string,
     tag: ProjectTagEnum,
     newComponents: ProjectComponentModel[],
+    projectId?: string,
     newAlerts?: BomAlert[],
     newSpecs?: GeneratedSpecs,
     newPdfReport?: Blob | null, // Added
@@ -64,8 +76,12 @@ export function BomProvider({ children }: { children: ReactNode }) {
   const [specs, setSpecs] = useState<GeneratedSpecs | null>(null);
   const [pdfReport, setPdfReport] = useState<Blob | null>(null); // Added
   const [projectInfo, setProjectInfo] = useState<{
+    id?: string;
     name: string;
     tag: ProjectTagEnum;
+    isPublic?: boolean;
+    isOwner?: boolean;
+    authorAlias?: string;
   } | null>(null);
   const [pushedHistory, setPushedHistory] = useState<ProjectCartSummary[]>([]);
 
@@ -74,7 +90,14 @@ export function BomProvider({ children }: { children: ReactNode }) {
     const project = projects.find((p) => p.name === projectName);
     if (!project) return;
 
-    setProjectInfo({ name: project.name, tag: project.tag });
+    setProjectInfo({
+      id: project.id,
+      name: project.name,
+      tag: project.tag,
+      isPublic: project.isPublic,
+      isOwner: project.isOwner,
+      authorAlias: project.authorAlias,
+    });
 
     const components = await getProjectComponents(project.id);
     const reports = await getReportsByProjectId(project.id);
@@ -83,7 +106,7 @@ export function BomProvider({ children }: { children: ReactNode }) {
     setComponents(components);
     setOriginalComponents(components);
     setHasUnsavedChanges(false);
-    setAlerts([]); // Clear dynamic alerts when loading from API
+    setAlerts(project.alerts ?? []);
     setSpecs(latestReport?.report_data || null);
 
     if (latestReport?.pdf_url) {
@@ -95,15 +118,48 @@ export function BomProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loadProjectById = useCallback(async (id: string) => {
+    const project = await getProject(id);
+    if (!project) return;
+
+    setProjectInfo({
+      id: project.id,
+      name: project.name,
+      tag: project.tag,
+      isPublic: project.isPublic,
+      isOwner: project.isOwner,
+      authorAlias: project.authorAlias,
+    });
+
+    const components = await getProjectComponents(id);
+    const reports = await getReportsByProjectId(id);
+    const latestReport = reports.length > 0 ? reports[0] : null;
+
+    setComponents(components);
+    setOriginalComponents(components);
+    setHasUnsavedChanges(false);
+    setAlerts(project.alerts ?? []);
+    setSpecs(latestReport?.report_data || null);
+
+    if (latestReport?.pdf_url) {
+      const response = await fetch(latestReport.pdf_url);
+      const blob = await response.blob();
+      setPdfReport(blob);
+    } else {
+      setPdfReport(null);
+    }
+  }, []);
+
   const loadDynamicProject = (
     projectName: string,
     tag: ProjectTagEnum,
     newComponents: ProjectComponentModel[],
+    projectId?: string,
     newAlerts: BomAlert[] = [],
     newSpecs: GeneratedSpecs | null = null,
     newPdfReport: Blob | null = null, // Added
   ) => {
-    setProjectInfo({ name: projectName, tag });
+    setProjectInfo({ id: projectId, name: projectName, tag });
     setComponents(newComponents);
     setOriginalComponents(newComponents);
     setHasUnsavedChanges(false);
@@ -168,18 +224,33 @@ export function BomProvider({ children }: { children: ReactNode }) {
       total,
       itemCount,
       projectInfo,
+      // A viewer of a public project they don't own may look but not edit;
+      // they must copy it first. Dynamic/AI projects are always editable.
+      canEdit: projectInfo ? projectInfo.isOwner !== false : true,
       pushedHistory,
       setQty: (id, qty) => {
+        if (projectInfo && projectInfo.isOwner === false) {
+          toast.error("This is a public project. Copy it to make changes.");
+          return;
+        }
         setComponents((prev) =>
           prev.map((i) => (i.id === id ? { ...i, qty: Math.max(0, qty) } : i)),
         );
         setHasUnsavedChanges(true);
       },
       remove: (id) => {
+        if (projectInfo && projectInfo.isOwner === false) {
+          toast.error("This is a public project. Copy it to make changes.");
+          return;
+        }
         setComponents((prev) => prev.filter((i) => i.id !== id));
         setHasUnsavedChanges(true);
       },
       swap: (id, next) => {
+        if (projectInfo && projectInfo.isOwner === false) {
+          toast.error("This is a public project. Copy it to make changes.");
+          return;
+        }
         setComponents((prev) =>
           prev.map((i) => (i.id === id ? { ...next, qty: i.qty } : i)),
         );
@@ -195,6 +266,7 @@ export function BomProvider({ children }: { children: ReactNode }) {
       },
       clearProject: clearProject,
       loadProject: async (name) => await loadProject(name),
+      loadProjectById: async (id) => await loadProjectById(id),
       loadDynamicProject,
       pushToCart,
       moveToLastCart,
@@ -211,6 +283,7 @@ export function BomProvider({ children }: { children: ReactNode }) {
     pushedHistory,
     pushToCart,
     moveToLastCart,
+    loadProjectById,
   ]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

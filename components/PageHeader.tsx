@@ -17,7 +17,7 @@ export function PageHeader({
   trail,
   showBack = true,
 }: {
-  trail: { label: string; href?: string }[];
+  trail: { label: string; href?: string; onClick?: () => void }[];
   showBack?: boolean;
 }) {
   const navigate = useNavigate();
@@ -52,7 +52,13 @@ export function PageHeader({
             <Fragment key={`${item.label}-${i}`}>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                {item.href ? (
+                {item.onClick ? (
+                  <BreadcrumbLink asChild>
+                    <button type="button" onClick={item.onClick}>
+                      {item.label}
+                    </button>
+                  </BreadcrumbLink>
+                ) : item.href ? (
                   <BreadcrumbLink asChild>
                     <Link
                       href={item.href}

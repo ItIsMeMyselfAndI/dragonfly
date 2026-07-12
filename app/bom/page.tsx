@@ -1,617 +1,141 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  AlertTriangle,
-  ArrowRight,
-  Check,
-  Loader2,
-  X,
-  Zap,
-  Clock,
-  Bot,
-  Wifi,
-  Network,
-  Cpu,
-  FileText,
-  Download,
-  ShoppingCart,
-} from "lucide-react";
-import { useBom } from "@/features/bom/store";
-import { ComponentCard } from "@/features/bom/ComponentCard";
-import { SubstituteSheet } from "@/features/bom/SubstituteSheet";
-import { compatibilityAlerts } from "@/features/bom/data";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/features/auth/store";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  getAllProjects,
-  createProjectComponent,
-  updateProjectComponent,
-  deleteProjectComponent,
-} from "@/lib/apis/project/client";
-import {
-  ProjectCartSummary,
-  ProjectComponentModel,
-  ProjectTagEnum,
-  type ProjectModel,
-} from "@/lib/apis/project/types";
-import { ProjectCost } from "@/components/ProjectCost";
+import { useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { getAllProjects } from "@/lib/apis/project/client";
+import { ProjectTagEnum, type ProjectModel } from "@/lib/apis/project/types";
+import { ProjectCard } from "@/components/ProjectCard";
 import { PageHeader } from "@/components/PageHeader";
-import { cn, formatRelativeTime } from "@/lib/utils";
-import { StockStatus } from "@/lib/apis/inventory/types";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
-const categoryIcons: Record<string, typeof Bot> = {
-  Robotics: Bot,
-  IoT: Wifi,
-  Networking: Network,
-  Mechatronics: Cpu,
-  Power: Zap,
-};
+type BomTab = ProjectTagEnum | "all";
 
-function ProjectItem({
-  project,
-  onSelect,
-}: {
-  project: ProjectModel;
-  onSelect: (name: string) => void;
-}) {
-  return (
-    <button
-      onClick={() => onSelect(project.name)}
-      className="group flex items-center justify-between rounded-2xl bg-surface/60 p-4 ring-1 ring-white/5 transition-all hover:bg-surface-elevated hover:ring-primary/40 hover:shadow-[0_0_20px_-5px_var(--primary)]"
-    >
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-          {(() => {
-            const Icon = categoryIcons[project.tag] || Zap;
-            return <Icon size={18} />;
-          })()}
-        </div>
-        <div className="text-left">
-          <p className="text-sm font-medium">{project.name}</p>
-          <p className="text-xs text-muted-foreground">
-            <ProjectCost project={project} />
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="flex flex-col items-end gap-1">
-          <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {project.tag}
-          </span>
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Clock size={12} /> {formatRelativeTime(project.time)}
-          </span>
-        </div>
-        <ArrowRight
-          size={18}
-          className="text-muted-foreground group-hover:text-primary transition-colors"
-        />
-      </div>
-    </button>
-  );
-}
+const TABS: { id: BomTab; label: string }[] = [
+  { id: "all", label: "All" },
+  ...Object.values(ProjectTagEnum).map((tag) => ({ id: tag as BomTab, label: tag })),
+];
 
 export default function BomScreen() {
-  const {
-    components,
-    originalComponents,
-    hasUnsavedChanges,
-    revertChanges,
-    commitChanges,
-    alerts,
-    pdfReport,
-    total,
-    itemCount,
-    loadProject,
-    pushToCart,
-    projectInfo,
-    clearProject,
-  } = useBom();
   const [projects, setProjects] = useState<ProjectModel[]>([]);
-  const [sub, setSub] = useState<ProjectComponentModel | null>(null); // Note: updated to use ProjectComponentModel
-  const [alertDismissed, setAlertDismissed] = useState(false);
-  const [checkout, setCheckout] = useState<"idle" | "loading" | "done">("idle");
-  const [isPdfOpen, setIsPdfOpen] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [tab, setTab] = useState<BomTab>("all");
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    if (pdfReport) {
-      const url = URL.createObjectURL(pdfReport);
-      setPdfUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      setPdfUrl("/reports/document.pdf");
-    }
-  }, [pdfReport]);
-
-  const generate = searchParams?.get("generate");
-  const prompt = searchParams?.get("prompt");
 
   const { user } = useAuth();
   const requesterKey = user?.id ?? "guest";
+
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollState = useCallback(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth);
+  }, []);
+
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener("scroll", updateScrollState);
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateScrollState);
+      ro.disconnect();
+    };
+  }, [updateScrollState]);
+
+  const scrollTabs = (dir: "left" | "right") => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const amount = dir === "left" ? -el.clientWidth : el.clientWidth;
+    el.scrollBy({ left: amount, behavior: "smooth" });
+  };
 
   useEffect(() => {
     async function init() {
       try {
         const data = await getAllProjects();
-        // Replace (don't merge-keep) so a previous user's projects are dropped
-        // when the requester identity changes. Re-runs on auth change.
         setProjects(data);
-
-        if ((generate === "true" || generate === "dynamic") && prompt) {
-          const decodedPrompt = decodeURIComponent(prompt);
-          if (!projectInfo || projectInfo.name !== decodedPrompt) {
-            loadProject(decodedPrompt);
-          }
-        }
       } catch (e) {
         console.error("Failed to initialize BOM screen", e);
       }
     }
     init();
-  }, [generate, prompt, projectInfo, loadProject, requesterKey]);
+  }, [requesterKey]);
 
-  const handleSelectProject = (projectName: string) => {
-    loadProject(projectName);
+  const handleSelectProject = (projectId: string) => {
+    router.push(`/bom/${projectId}`);
   };
 
-  if (!projectInfo) {
-    return (
-      <div className="flex flex-col gap-6 px-5 pt-2 pb-48">
-        <PageHeader trail={[{ label: "BOM" }]} />
-        <div className="flex flex-col gap-3">
-          {projects.map((p) => (
-            <ProjectItem
-              key={p.id}
-              project={p}
-              onSelect={handleSelectProject}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const handleCheckout = async () => {
-    setCheckout("loading");
-
-    if (projectInfo) {
-      const project = projects.find((p) => p.name === projectInfo.name);
-      if (project) {
-        try {
-          const deletes = originalComponents.filter(
-            (oc) => !components.some((c) => c.id === oc.id),
-          );
-          const creates = components.filter(
-            (c) => !originalComponents.some((oc) => oc.id === c.id),
-          );
-          const updates = components.filter((c) => {
-            const oc = originalComponents.find((o) => o.id === c.id);
-            if (!oc) return false;
-            // Compare relevant fields for updates
-            return (
-              c.qty !== oc.qty ||
-              c.inventoryId !== oc.inventoryId ||
-              c.unitPrice !== oc.unitPrice ||
-              c.name !== oc.name ||
-              c.partNumber !== oc.partNumber ||
-              c.shortDesc !== oc.shortDesc
-            );
-          });
-
-          await Promise.all(
-            deletes.map((c) => deleteProjectComponent(project.id, c.id)),
-          );
-          await Promise.all(
-            creates.map((c) => {
-              const {
-                projectId,
-                createdAt,
-                updatedAt,
-                stock,
-                stockCount,
-                ...rest
-              } = c;
-              return createProjectComponent(project.id, rest as any);
-            }),
-          );
-          await Promise.all(
-            updates.map((c) => {
-              const {
-                id,
-                projectId,
-                createdAt,
-                updatedAt,
-                stock,
-                stockCount,
-                ...rest
-              } = c;
-              return updateProjectComponent(project.id, c.id, rest as any);
-            }),
-          );
-
-          commitChanges();
-        } catch (e) {
-          console.error("Failed to sync changes", e);
-        }
-
-        const summary: Omit<ProjectCartSummary, "totalPrice"> = {
-          id: `${project.name}-${Date.now()}`,
-          name: project.name,
-          tag: project.tag,
-          timestamp: new Date().toLocaleString(),
-          items: components.map((item) => ({
-            ...item,
-            qtyPrice: item.unitPrice * item.qty,
-          })),
-        };
-        pushToCart(summary);
-      } else if (components.length > 0) {
-        // Dynamic AI Project
-        const summary: Omit<ProjectCartSummary, "totalPrice"> = {
-          id: `dynamic-${Date.now()}`,
-          name: projectInfo.name,
-          tag: ProjectTagEnum.NA,
-          timestamp: new Date().toLocaleString(),
-          items: components.map((item) => ({
-            ...item,
-            qtyPrice: item.unitPrice * item.qty,
-          })),
-        };
-        pushToCart(summary);
-      }
-    }
-
-    setCheckout("done");
-    setTimeout(() => {
-      setCheckout("idle");
-      router.push("/cart");
-    }, 1000);
-  };
+  const filteredProjects =
+    tab === "all" ? projects : projects.filter((p) => p.tag === tab);
 
   return (
-    <>
-      <div className="flex flex-col gap-4 px-5 pt-2 pb-48">
-        <header className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
+    <div className="flex flex-col gap-4 px-5 pt-2 pb-48">
+      <PageHeader trail={[{ label: "BOM" }]} />
+
+      <div className="relative">
+        <div
+          ref={tabsRef}
+          className="flex gap-1 overflow-x-auto rounded-xl bg-surface/60 p-1 ring-1 ring-white/5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {TABS.map((t) => (
             <button
-              onClick={() => clearProject()}
-              className="mb-2 flex items-center gap-1 rounded-full border border-white/10 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                tab === t.id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <ArrowRight size={12} className="rotate-180" />
-              Back
+              {t.label}
             </button>
-            <PageHeader
-              trail={[
-                { label: "BOM", href: "/bom" },
-                { label: projectInfo.name },
-              ]}
-              showBack={false}
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              {components.length} components · {itemCount} units
-            </p>
-          </div>
-          <button
-            onClick={() => setIsPdfOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
-          >
-            <FileText size={18} />
-          </button>
-        </header>
-
-        {/* Compatibility alert */}
-        <AnimatePresence>
-          {!alertDismissed &&
-            (components.length > 0 &&
-            components.every((i) => i.stock === StockStatus.IN_STOCK) &&
-            alerts.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/10 p-3"
-              >
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/20">
-                  <Check size={14} className="text-primary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-primary">
-                    All components are in stock and compatible
-                  </p>
-                  <p className="mt-0.5 text-[11px] leading-relaxed text-foreground/80">
-                    Your project is ready to build.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setAlertDismissed(true)}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground"
-                >
-                  <X size={14} />
-                </button>
-              </motion.div>
-            ) : (
-              [
-                ...alerts, // Dynamic alerts from context
-                ...compatibilityAlerts.filter(
-                  (a) =>
-                    !a.componentId ||
-                    components.some((item) => item.id === a.componentId),
-                ),
-                ...components
-                  .filter((i) => i.stock === StockStatus.OUT)
-                  .map((i) => ({
-                    id: `stock-${i.id}`,
-                    severity: "warning" as const,
-                    title: "Component out of stock",
-                    message: `${i.name} is currently unavailable.`,
-                    componentId: i.id,
-                  })),
-              ].map((a) => (
-                <motion.div
-                  key={a.id || a.title}
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className={cn(
-                    "flex items-start gap-3 rounded-2xl border p-3",
-                    a.severity === "warning"
-                      ? "border-warning/30 bg-warning/10"
-                      : "border-blue-500/30 bg-blue-500/10",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-                      a.severity === "warning"
-                        ? "bg-warning/20"
-                        : "bg-blue-500/20",
-                    )}
-                  >
-                    <AlertTriangle
-                      size={14}
-                      className={
-                        a.severity === "warning"
-                          ? "text-warning"
-                          : "text-blue-500"
-                      }
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={cn(
-                        "text-xs font-semibold",
-                        a.severity === "warning"
-                          ? "text-warning"
-                          : "text-blue-500",
-                      )}
-                    >
-                      {a.title}
-                    </p>
-                    <p className="mt-0.5 text-[11px] leading-relaxed text-foreground/80">
-                      {a.message}
-                    </p>
-                    {a.componentId && (
-                      <button
-                        onClick={() => {
-                          const comp = components.find(
-                            (i) => i.id === a.componentId,
-                          );
-                          if (comp) setSub(comp);
-                        }}
-                        className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-warning underline underline-offset-2 hover:cursor-pointer"
-                      >
-                        Fix issue
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setAlertDismissed(true)}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground"
-                  >
-                    <X size={14} />
-                  </button>
-                </motion.div>
-              ))
-            ))}
-        </AnimatePresence>
-
-        {/* Component feed */}
-        <div className="flex flex-col gap-3">
-          {components.map((c) => (
-            <ComponentCard key={c.id} c={c} onFindSubstitute={setSub} />
           ))}
         </div>
 
-        {/* Sticky checkout */}
-        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-20 mx-auto flex max-w-[440px] justify-center px-5">
-          <motion.div
-            layout
-            className="glass pointer-events-auto flex w-full items-center justify-between gap-3 rounded-full border border-white/10 p-2 pl-5 glow-soft"
-          >
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Total
-              </p>
-              <motion.p
-                key={total}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="font-mono text-base font-semibold tabular-nums"
-              >
-                ₱{total.toFixed(2)}
-              </motion.p>
-            </div>
-            {(() => {
-              const hasIssues =
-                components.some((i) => i.stock === StockStatus.OUT) ||
-                compatibilityAlerts.some(
-                  (a) =>
-                    !a.componentId ||
-                    components.some((item) => item.id === a.componentId),
-                );
-
-              return (
-                <div className="flex items-center gap-2">
-                  <AnimatePresence>
-                    {hasUnsavedChanges && !hasIssues && (
-                      <motion.button
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.5 }}
-                        onClick={revertChanges}
-                        className={cn(
-                          "flex h-11 w-11 shrink-0",
-                          "items-center justify-center rounded-full",
-                          "bg-destructive/10 p-0 text-destructive ring-1 ring-destructive/20 transition-colors hover:bg-destructive/20",
-                        )}
-                      >
-                        <X size={20} />
-                      </motion.button>
-                    )}
-                  </AnimatePresence>
-                  <motion.button
-                    whileTap={hasIssues ? {} : { scale: 0.97 }}
-                    onClick={handleCheckout}
-                    disabled={checkout !== "idle" || hasIssues}
-                    className={cn(
-                      "flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-primary-foreground",
-                      hasIssues
-                        ? "bg-muted text-muted-foreground cursor-not-allowed"
-                        : "glow-primary bg-primary",
-                    )}
-                  >
-                    <AnimatePresence mode="wait">
-                      {checkout === "idle" && (
-                        <motion.span
-                          key="i"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="flex items-center gap-2"
-                        >
-                          {hasIssues ? (
-                            "Fix issues to proceed"
-                          ) : (
-                            <>
-                              <AnimatePresence mode="wait" initial={false}>
-                                {hasUnsavedChanges ? (
-                                  <motion.span
-                                    key="cart-icon"
-                                    initial={{ opacity: 0, scale: 0.5 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.5 }}
-                                    className="flex items-center justify-center"
-                                  >
-                                    <ShoppingCart size={20} />
-                                  </motion.span>
-                                ) : (
-                                  <motion.span
-                                    key="cart-text"
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    className="flex items-center"
-                                  >
-                                    Push to cart
-                                  </motion.span>
-                                )}
-                              </AnimatePresence>
-                              <ArrowRight size={16} />
-                            </>
-                          )}
-                        </motion.span>
-                      )}
-                      {checkout === "loading" && (
-                        <motion.span
-                          key="l"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="flex items-center gap-2"
-                        >
-                          <Loader2 size={16} className="animate-spin" />{" "}
-                          Pushing…
-                        </motion.span>
-                      )}
-                      {checkout === "done" && (
-                        <motion.span
-                          key="d"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="flex items-center gap-2"
-                        >
-                          <Check size={16} /> Sent
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </motion.button>
-                </div>
-              );
-            })()}
-          </motion.div>
-        </div>
-
-        <Dialog open={isPdfOpen} onOpenChange={setIsPdfOpen}>
-          <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Specs Calculation Report</DialogTitle>
-            </DialogHeader>
-            <div className="flex h-96 items-center justify-center rounded-lg border border-dashed border-white/10 overflow-hidden">
-              {pdfUrl ? (
-                <iframe
-                  src={pdfUrl}
-                  className="h-full w-full"
-                  title="Specs Calculation Report"
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No PDF generated
-                </p>
-              )}
-            </div>
-            <div className="flex items-center justify-between gap-2 mt-4">
-              <span className="rounded-full border border-white/50 bg-white/8 px-2.5 py-0.5 text-xs font-medium text-white">
-                AI Generated
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setIsPdfOpen(false)}>
-                  Close
-                </Button>
-                <a
-                  href={pdfUrl || "#"}
-                  download={`${projectInfo.name}_Report.pdf`}
-                  className={cn(
-                    "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2",
-                    !pdfUrl && "pointer-events-none opacity-50",
-                  )}
-                >
-                  <Download size={16} className="mr-2" />
-                  Download
-                </a>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        <SubstituteSheet
-          component={sub}
-          projectName={projectInfo.name}
-          onClose={() => setSub(null)}
-        />
+        {canScrollLeft && (
+          <>
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 rounded-l-xl bg-gradient-to-r from-surface/90 to-transparent" />
+            <button
+              type="button"
+              aria-label="Scroll tabs left"
+              onClick={() => scrollTabs("left")}
+              className="absolute left-0.5 top-1/2 z-20 flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-surface/60 backdrop-blur-sm text-muted-foreground ring-1 ring-white/10 transition-all hover:bg-surface hover:text-foreground hover:ring-primary/40 hover:shadow-lg hover:shadow-primary/20"
+            >
+              <ChevronLeft size={16} />
+            </button>
+          </>
+        )}
+        {canScrollRight && (
+          <>
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 rounded-r-xl bg-gradient-to-l from-surface/90 to-transparent" />
+            <button
+              type="button"
+              aria-label="Scroll tabs right"
+              onClick={() => scrollTabs("right")}
+              className="absolute right-0.5 top-1/2 z-20 flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-surface/60 backdrop-blur-sm text-muted-foreground ring-1 ring-white/10 transition-all hover:bg-surface hover:text-foreground hover:ring-primary/40 hover:shadow-lg hover:shadow-primary/20"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </>
+        )}
       </div>
-    </>
+
+      <div className="flex flex-col gap-3">
+        {filteredProjects.map((p) => (
+          <ProjectCard
+            key={p.id}
+            project={p}
+            onSelect={() => handleSelectProject(p.id)}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
